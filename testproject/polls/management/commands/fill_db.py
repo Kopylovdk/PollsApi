@@ -19,23 +19,23 @@ class Command(BaseCommand):
         polls = [
             {'name': 'Опрос номер 1',
              'description': 'Описание опроса номер 1',
-             'start_date': datetime.date(2021, 7, 8),
+             'start_date': datetime.date.today(),
              'end_date': datetime.date.today() + datetime.timedelta(days=2)},
             {'name': 'Опрос номер 2',
              'description': 'Описание опроса номер 2',
-             'start_date': datetime.date(2021, 7, 8),
+             'start_date': datetime.date.today(),
              'end_date': datetime.date.today() + datetime.timedelta(days=4)},
             {'name': 'Опрос номер 3',
              'description': 'Описание опроса номер 3',
-             'start_date': datetime.date(2021, 7, 8),
+             'start_date': datetime.date.today(),
              'end_date': datetime.date.today() + datetime.timedelta(days=6)},
             {'name': 'Опрос номер 4',
              'description': 'Описание опроса номер 4 без вопросов',
-             'start_date': datetime.date(2021, 7, 8),
+             'start_date': datetime.date.today(),
              'end_date': datetime.date.today() + datetime.timedelta(days=6)},
             {'name': 'Опрос номер 5',
              'description': 'Описание опроса номер 5 только текстовые вопросы',
-             'start_date': datetime.date(2021, 7, 8),
+             'start_date': datetime.date.today(),
              'end_date': datetime.date.today() + datetime.timedelta(days=6)}
         ]
 
