@@ -54,7 +54,7 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PollsActiveListAPIView(APIView):
+class PollsListAPIView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = PollsSerializer
     renderer_classes = (ClassJSONRenderer,)
@@ -73,7 +73,7 @@ class PollsOneAPIView(APIView):
     def get(self, request, pk):
         poll = Poll.objects.filter(id=pk, is_active=True).first()
         if not poll:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({'errors': 'ID not valid'}, status=status.HTTP_403_FORBIDDEN)
         serializer_poll = self.serializer_class(poll)
         dict_to_return = {
             'poll': serializer_poll.data,
@@ -133,7 +133,7 @@ class QuestionAPIView(APIView):
         question = request.data.get('question')
         question_options = request.data.get('question_options')
         if question['question_type'] in ['MANY_ANSWERS', 'ONE_ANSWER'] and not question_options:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=question)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -196,26 +196,21 @@ class QuestionOptionsAPIView(APIView):
     serializer_class = QuestionOptionsSerializer
     renderer_classes = (ClassJSONRenderer,)
 
-    def post(self, request):
+    def post(self, request, pk):
         question_options = request.data.get('question_options')
-        qo = {'question_options': []}
-        for q_o in question_options:
-            serializer = self.serializer_class(data=q_o)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            qo['question_options'].append(serializer.data)
-        return Response(qo, status=status.HTTP_201_CREATED)
+        question_options['question_id'] = pk
+        serializer = self.serializer_class(data=question_options)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'question_options': serializer.data}, status=status.HTTP_201_CREATED)
 
-    def patch(self, request):
+    def patch(self, request, pk):
         new_qo = request.data.get('question_options')
-        qo = {'question_options': []}
-        for nqo in new_qo:
-            q_o = get_object_or_404(QuestionOptions, id=nqo['id'])
-            serializer = self.serializer_class(instance=q_o, data=nqo, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            qo['question_options'].append(serializer.data)
-        return Response(qo, status.HTTP_200_OK)
+        qo = get_object_or_404(QuestionOptions, id=pk)
+        serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'question_options': serializer.data}, status.HTTP_200_OK)
 
 
 class UserAnswersAPIView(APIView):
@@ -266,8 +261,8 @@ class UserAnswersAPIView(APIView):
         else:
             answers['user_id'] = User.objects.get(username='anonymous').id
         question_check = Question.objects.filter(id=answers['question_id']).first()
-        ids_to_add = answers['question_option_id']
         if question_check.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+            ids_to_add = answers['question_option_id']
             if 'user_answer' in answers.keys():
                 del (answers['user_answer'])
             for id_to_add in ids_to_add:
