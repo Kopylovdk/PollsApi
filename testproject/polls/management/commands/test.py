@@ -1,5 +1,3 @@
-import datetime
-
 import requests
 
 # _________________ПОЛЬЗОВАТЕЛИ_____________________
@@ -124,7 +122,6 @@ data_user_auth = {'user': {
 }}
 
 result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_auth)
-# print(result.json())
 headers = {"Authorization": f'Token {result.json()["user"]["token"]}'}
 
 user_answer = {"answers": {
