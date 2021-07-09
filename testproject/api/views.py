@@ -71,9 +71,7 @@ class PollsOneAPIView(APIView):
     renderer_classes = (ClassJSONRenderer,)
 
     def get(self, request, pk):
-        poll = Poll.objects.filter(id=pk, is_active=True).first()
-        if not poll:
-            return Response({'errors': 'ID not valid'}, status=status.HTTP_403_FORBIDDEN)
+        poll = get_object_or_404(Poll, id=pk, is_active=True)
         serializer_poll = self.serializer_class(poll)
         dict_to_return = {
             'poll': serializer_poll.data,
@@ -154,13 +152,13 @@ class QuestionAPIView(APIView):
     def patch(self, request, pk):
         new_question = request.data.get('question')
         question = get_object_or_404(Question, id=pk)
-        active_chang_flag = None
+        active_change_flag = None
         if 'is_active' in new_question.keys() and question.is_active != new_question['is_active']:
-            active_chang_flag = new_question['is_active']
+            active_change_flag = new_question['is_active']
         serializer = self.serializer_class(instance=question, data=new_question, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        if active_chang_flag is not None and serializer.data.get('question_type') in ['MANY_ANSWERS', 'ONE_ANSWER']:
+        if active_change_flag is not None and serializer.data.get('question_type') in ['MANY_ANSWERS', 'ONE_ANSWER']:
             qo_deactivation(serializer.data.get('is_active'), serializer.data.get('id'))
         return Response(serializer.data, status.HTTP_200_OK)
 
@@ -241,18 +239,18 @@ class UserAnswersAPIView(APIView):
                                 qo_serializer = QuestionOptionsSerializer(qo.filter(id=i.question_option_id.id).first())
                                 to_data['answers'].append(qo_serializer.data)
                         else:
-                            to_data['answers'].append('Нет ответа')
+                            to_data['answers'].append('No answer')
                     else:
                         span = ua.filter(question_id=quest.id).first()
                         if span:
                             to_data['answers'].append(span.user_answer)
                         else:
-                            to_data['answers'].append('Нет ответа')
+                            to_data['answers'].append('No answer')
                     data['questions'].append(to_data)
                 dict_with_polls['polls'].append(data)
             return Response(dict_with_polls, status=status.HTTP_200_OK)
         else:
-            return Response({'errors': 'Пользователь не авторизован'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'errors': 'No authorisation'}, status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request):
         answers = request.data.get('answers')
@@ -260,8 +258,8 @@ class UserAnswersAPIView(APIView):
             answers['user_id'] = request.user.id
         else:
             answers['user_id'] = User.objects.get(username='anonymous').id
-        question_check = Question.objects.filter(id=answers['question_id']).first()
-        if question_check.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+        get_object_or_404(Poll, id=answers['poll_id'])
+        if get_object_or_404(Question, id=answers['question_id']).question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
             ids_to_add = answers['question_option_id']
             if 'user_answer' in answers.keys():
                 del (answers['user_answer'])
@@ -276,4 +274,4 @@ class UserAnswersAPIView(APIView):
             serializer = self.serializer_class(data=answers)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return Response({'answers': 'Данные сохранены.'}, status=status.HTTP_201_CREATED)
+        return Response({'answers': 'Data saved'}, status=status.HTTP_201_CREATED)

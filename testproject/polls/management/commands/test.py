@@ -16,7 +16,6 @@ data_user_auth = {'user': {
 }}
 
 result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_auth)
-# print(result.json())
 headers = {"Authorization": f'Token {result.json()["user"]["token"]}'}
 
 result = requests.get('http://127.0.0.1:8000/api/users/user/', headers=headers)
@@ -49,8 +48,7 @@ result = requests.patch(f'http://127.0.0.1:8000/api/polls/update/{result_create.
                         headers=headers, json=pol_update)
 print(f'Изменение опроса {result.status_code}:\n{result.json()}')
 
-result = requests.get(f'http://127.0.0.1:8000/api/polls/list/',
-                      headers=headers, json=pol_update)
+result = requests.get(f'http://127.0.0.1:8000/api/polls/list/', headers=headers)
 print(f'ВСЕ опросы {result.status_code}:\n{result.json()}')
 
 result_get_all = requests.get(f'http://127.0.0.1:8000/api/polls/allActive/', headers=headers)
