@@ -54,17 +54,6 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PollsListAPIView(APIView):
-    permission_classes = (AllowAny,)
-    serializer_class = PollsSerializer
-    renderer_classes = (ClassJSONRenderer,)
-
-    def get(self, request):
-        polls = Poll.objects.filter(is_active=True)
-        serializer = self.serializer_class(polls, many=True)
-        return Response({'polls': serializer.data}, status=status.HTTP_200_OK)
-
-
 class PollsOneAPIView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = PollsSerializer
@@ -89,37 +78,52 @@ class PollsOneAPIView(APIView):
 
 
 class PollsAPIView(APIView):
-    permission_classes = (IsAdminUser,)
+    permission_classes = (AllowAny,)
     serializer_class = PollsSerializer
     renderer_classes = (ClassJSONRenderer,)
 
     def get(self, request):
-        polls = Poll.objects.all()
-        serializer = self.serializer_class(polls, many=True)
-        return Response({'polls': serializer.data}, status=status.HTTP_200_OK)
+        if request.user.is_superuser:
+            polls = Poll.objects.all()
+            serializer = self.serializer_class(polls, many=True)
+            return Response({'polls': serializer.data}, status=status.HTTP_200_OK)
+        else:
+            polls = Poll.objects.filter(is_active=True)
+            serializer = self.serializer_class(polls, many=True)
+            return Response({'polls': serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        poll = request.data.get('polls')
-        serializer = self.serializer_class(data=poll)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'polls': serializer.data}, status=status.HTTP_201_CREATED)
+        if request.user.is_superuser:
+            poll = request.data.get('polls')
+            serializer = self.serializer_class(data=poll)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({'polls': serializer.data}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'detail': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
     def patch(self, request, pk):
-        new_poll = request.data.get('polls')
-        poll = get_object_or_404(Poll, id=pk)
-        active_change_flag = None
-        keys = new_poll.keys()
-        if 'is_active' in keys and poll.is_active != new_poll['is_active']:
-            active_change_flag = new_poll['is_active']
-        if 'start_date' in keys:
-            del (new_poll['start_date'])
-        serializer = self.serializer_class(instance=poll, data=new_poll, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        if active_change_flag is not None:
-            q_deactivation(active_change_flag, poll.id)
-        return Response(serializer.data, status.HTTP_200_OK)
+        if request.user.is_superuser:
+            if not request.data:
+                return Response({'errors': 'No data'}, status=status.HTTP_400_BAD_REQUEST)
+            new_poll = request.data.get('polls')
+            poll = get_object_or_404(Poll, id=pk)
+            active_change_flag = None
+            keys = new_poll.keys()
+            if 'is_active' in keys and poll.is_active != new_poll['is_active']:
+                active_change_flag = new_poll['is_active']
+            if 'start_date' in keys:
+                del (new_poll['start_date'])
+            serializer = self.serializer_class(instance=poll, data=new_poll, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            if active_change_flag is not None:
+                q_deactivation(active_change_flag, poll.id)
+            return Response(serializer.data, status.HTTP_200_OK)
+        else:
+            return Response({'detail': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
 
 class QuestionAPIView(APIView):
@@ -150,6 +154,8 @@ class QuestionAPIView(APIView):
             return Response(to_send, status=status.HTTP_201_CREATED)
 
     def patch(self, request, pk):
+        if not request.data:
+            return Response({'errors': 'No data'}, status=status.HTTP_400_BAD_REQUEST)
         new_question = request.data.get('question')
         question = get_object_or_404(Question, id=pk)
         active_change_flag = None
@@ -161,6 +167,28 @@ class QuestionAPIView(APIView):
         if active_change_flag is not None and serializer.data.get('question_type') in ['MANY_ANSWERS', 'ONE_ANSWER']:
             qo_deactivation(serializer.data.get('is_active'), serializer.data.get('id'))
         return Response(serializer.data, status.HTTP_200_OK)
+
+
+class QuestionOptionsAPIView(APIView):
+    permission_classes = (IsAdminUser,)
+    serializer_class = QuestionOptionsSerializer
+    renderer_classes = (ClassJSONRenderer,)
+
+    def post(self, request, pk):
+        question_options = request.data.get('question_options')
+        question_options['question_id'] = pk
+        serializer = self.serializer_class(data=question_options)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'question_options': serializer.data}, status=status.HTTP_201_CREATED)
+
+    def patch(self, request, pk):
+        new_qo = request.data.get('question_options')
+        qo = get_object_or_404(QuestionOptions, id=pk)
+        serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'question_options': serializer.data}, status.HTTP_200_OK)
 
 
 def q_deactivation(choice, p_id):
@@ -187,28 +215,6 @@ def qo_deactivation(choice, q_id):
         for qo in QuestionOptions.objects.filter(question_id=q_id):
             qo.is_active = False
             qo.save()
-
-
-class QuestionOptionsAPIView(APIView):
-    permission_classes = (IsAdminUser,)
-    serializer_class = QuestionOptionsSerializer
-    renderer_classes = (ClassJSONRenderer,)
-
-    def post(self, request, pk):
-        question_options = request.data.get('question_options')
-        question_options['question_id'] = pk
-        serializer = self.serializer_class(data=question_options)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'question_options': serializer.data}, status=status.HTTP_201_CREATED)
-
-    def patch(self, request, pk):
-        new_qo = request.data.get('question_options')
-        qo = get_object_or_404(QuestionOptions, id=pk)
-        serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'question_options': serializer.data}, status.HTTP_200_OK)
 
 
 class UserAnswersAPIView(APIView):
@@ -250,7 +256,8 @@ class UserAnswersAPIView(APIView):
                 dict_with_polls['polls'].append(data)
             return Response(dict_with_polls, status=status.HTTP_200_OK)
         else:
-            return Response({'errors': 'Permission denied'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'detail': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request):
         answers = request.data.get('answers')
