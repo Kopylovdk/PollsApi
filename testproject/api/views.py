@@ -250,7 +250,7 @@ class UserAnswersAPIView(APIView):
                 dict_with_polls['polls'].append(data)
             return Response(dict_with_polls, status=status.HTTP_200_OK)
         else:
-            return Response({'errors': 'No authorisation'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'errors': 'Permission denied'}, status=status.HTTP_401_UNAUTHORIZED)
 
     def post(self, request):
         answers = request.data.get('answers')
