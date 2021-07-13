@@ -41,18 +41,17 @@ result_create = requests.post('http://127.0.0.1:8000/api/polls/', headers=header
 print(f'Создание опроса {result_create.status_code}:\n{result_create.json()}')
 
 pol_update = {"polls": {
-    "name": "test после обновления",
+    "is_active": False,
 }}
 
-result = requests.patch(f'http://127.0.0.1:8000/api/polls/{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+result = requests.patch(f'http://127.0.0.1:8000/api/polls/1',
                         headers=headers, json=pol_update)
 print(f'Изменение опроса {result.status_code}:\n{result.json()}')
 
 result = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
 print(f'ВСЕ опросы {result.status_code}:\n{result.json()}')
 
-result_get_all = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
-print(f'ВСЕ АКТИВНЫЕ опросы {result_get_all.status_code}:\n{result_get_all.json()}')
+
 
 #
 q_create_er = {"question": {
@@ -111,9 +110,6 @@ result = requests.patch(f'http://127.0.0.1:8000/api/questionOptions/{qo_result.j
                         headers=headers, json=qo_update)
 print(f'Изменение варианта ответа {result.status_code}:\n{result.json()}')
 
-result = requests.get(f'http://127.0.0.1:8000/api/polls/one/{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}', headers=headers)
-print(f'Конкретный опрос {result.status_code}:\n{result.json()}')
-
 data_user_auth = {'user': {
     'username': 'test',
     'password': '123456',
@@ -121,6 +117,12 @@ data_user_auth = {'user': {
 
 result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_auth)
 headers = {"Authorization": f'Token {result.json()["user"]["token"]}'}
+
+result_get_all = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
+print(f'ВСЕ АКТИВНЫЕ опросы {result_get_all.status_code}:\n{result_get_all.json()}')
+
+result = requests.get(f'http://127.0.0.1:8000/api/polls/{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}', headers=headers)
+print(f'Конкретный опрос {result.status_code}:\n{result.json()}')
 
 user_answer = {"answers": {
     "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
@@ -151,3 +153,4 @@ print(f'Все ответы пользователя {result.status_code}:\n{res
 
 result = requests.get(f'http://127.0.0.1:8000/api/users/answers/')
 print(f'Все ответы пользователя ОШИБКА {result.status_code}:\n{result.json()}')
+

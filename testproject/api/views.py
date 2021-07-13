@@ -54,36 +54,29 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PollsOneAPIView(APIView):
-    permission_classes = (AllowAny,)
-    serializer_class = PollsSerializer
-    renderer_classes = (ClassJSONRenderer,)
-
-    def get(self, request, pk):
-        poll = get_object_or_404(Poll, id=pk, is_active=True)
-        serializer_poll = self.serializer_class(poll)
-        dict_to_return = {
-            'poll': serializer_poll.data,
-            'questions': []
-        }
-        for q in Question.objects.filter(poll_id=pk, is_active=True):
-            serializer_questions = QuestionSerializer(q)
-            to_insert = {'question': serializer_questions.data,
-                         'question_options': []}
-            for qo in QuestionOptions.objects.filter(question_id=q.id, is_active=True):
-                serializer_qo = QuestionOptionsSerializer(qo)
-                to_insert['question_options'].append(serializer_qo.data)
-            dict_to_return['questions'].append(to_insert)
-        return Response(dict_to_return, status=status.HTTP_200_OK)
-
-
 class PollsAPIView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = PollsSerializer
     renderer_classes = (ClassJSONRenderer,)
 
-    def get(self, request):
-        if request.user.is_superuser:
+    def get(self, request, pk=None):
+        if pk is not None:
+            poll = get_object_or_404(Poll, id=pk, is_active=True)
+            serializer_poll = self.serializer_class(poll)
+            dict_to_return = {
+                'poll': serializer_poll.data,
+                'questions': []
+            }
+            for q in Question.objects.filter(poll_id=pk, is_active=True):
+                serializer_questions = QuestionSerializer(q)
+                to_insert = {'question': serializer_questions.data,
+                             'question_options': []}
+                for qo in QuestionOptions.objects.filter(question_id=q.id, is_active=True):
+                    serializer_qo = QuestionOptionsSerializer(qo)
+                    to_insert['question_options'].append(serializer_qo.data)
+                dict_to_return['questions'].append(to_insert)
+            return Response(dict_to_return, status=status.HTTP_200_OK)
+        elif request.user.is_superuser:
             polls = Poll.objects.all()
             serializer = self.serializer_class(polls, many=True)
             return Response({'polls': serializer.data}, status=status.HTTP_200_OK)
