@@ -51,39 +51,37 @@ print(f'Изменение опроса {result.status_code}:\n{result.json()}')
 result = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
 print(f'ВСЕ опросы {result.status_code}:\n{result.json()}')
 
-
-
-#
 q_create_er = {"question": {
-    "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
     "question_type": "MANY_ANSWERS",
     "question_text": "Тестовое создание без вариантов ответа"
-},
-}
+}}
 
-result = requests.post(f'http://127.0.0.1:8000/api/questions/', headers=headers, json=q_create_er)
+result = requests.post(f'http://127.0.0.1:8000/api/questions/'
+                       f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+                       headers=headers, json=q_create_er)
 print(f'Создание вопроса ОШИБКА {result.status_code}:\n{result.json()}')
 
 q_create_m = {"question": {
-    "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
     "question_type": "MANY_ANSWERS",
     "question_text": "Тестовое создание c вариантами ответа"
 },
     'question_options': ['test 1', 'test 2', 'test 3']
 }
 
-result_m = requests.post(f'http://127.0.0.1:8000/api/questions/', headers=headers, json=q_create_m)
+result_m = requests.post(f'http://127.0.0.1:8000/api/questions/'
+                         f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+                         headers=headers, json=q_create_m)
 print(f'Создание вопроса c вариантами ответов {result_m.status_code}:\n{result_m.json()}')
 
 q_create_t = {"question": {
-    "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
     "question_type": "TEXT_ANSWER",
     "question_text": "Тестовое создание без вариантов ответа"
-},
-
+}
 }
 
-result_t = requests.post(f'http://127.0.0.1:8000/api/questions/', headers=headers, json=q_create_t)
+result_t = requests.post(f'http://127.0.0.1:8000/api/questions/'
+                         f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+                         headers=headers, json=q_create_t)
 print(f'Создание вопроса БЕЗ вариантов ответа {result_t.status_code}:\n{result_t.json()}')
 
 q_update = {"question": {
@@ -125,32 +123,30 @@ result = requests.get(f'http://127.0.0.1:8000/api/polls/{result_create.json()["p
 print(f'Конкретный опрос {result.status_code}:\n{result.json()}')
 
 user_answer = {"answers": {
-    "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
-    "question_id": result_m.json()["question"]["id"] if result_m.status_code == 201 else 1,
     "question_option_id": [result_m.json()["question_options"][0]["id"] if result_m.status_code == 201 else 1,
                            result_m.json()["question_options"][1]["id"] if result_m.status_code == 201 else 1,
-                           result_m.json()["question_options"][2]["id"]] if result_m.status_code == 201 else 1,
+                           result_m.json()["question_options"][2]["id"] if result_m.status_code == 201 else 1],
 }
 }
-print(f'{user_answer=}')
-result = requests.post(f'http://127.0.0.1:8000/api/users/answers/',
+result = requests.post(f'http://127.0.0.1:8000/api/questions/'
+                       f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}'
+                       f'/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}/answers/',
                        headers=headers, json=user_answer)
 print(f'Создание 1 варианта ответа {result.status_code}:\n{result.json()}')
 
 user_answer_2 = {"answers": {
-    "poll_id": result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1,
-    "question_id": result_t.json()["question"]["id"] if result_t.status_code == 201 else 1,
     "user_answer": "Какой-то ОТВЕТ"}
 }
 
-print(f'{user_answer_2=}')
-result = requests.post(f'http://127.0.0.1:8000/api/users/answers/',
+result = requests.post(f'http://127.0.0.1:8000/api/questions/'
+                       f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}/'
+                       f'{result_t.json()["question"]["id"] if result_t.status_code == 201 else 1}/answers/',
                        headers=headers, json=user_answer_2)
 print(f'Создание 2 варианта ответа {result.status_code}:\n{result.json()}')
 
-result = requests.get(f'http://127.0.0.1:8000/api/users/answers/', headers=headers)
+result = requests.get(f'http://127.0.0.1:8000/api/users/polls/', headers=headers)
 print(f'Все ответы пользователя {result.status_code}:\n{result.json()}')
 
-result = requests.get(f'http://127.0.0.1:8000/api/users/answers/')
+result = requests.get(f'http://127.0.0.1:8000/api/users/polls/')
 print(f'Все ответы пользователя ОШИБКА {result.status_code}:\n{result.json()}')
 

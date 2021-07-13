@@ -124,11 +124,15 @@ class QuestionAPIView(APIView):
     serializer_class = QuestionSerializer
     renderer_classes = (ClassJSONRenderer,)
 
-    def post(self, request):
+    def post(self, request, pk):
         question = request.data.get('question')
         question_options = request.data.get('question_options')
-        if question['question_type'] in ['MANY_ANSWERS', 'ONE_ANSWER'] and not question_options:
-            return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
+        if question:
+            question['poll_id'] = get_object_or_404(Poll, pk=pk).id
+            if question['question_type'] in ['MANY_ANSWERS', 'ONE_ANSWER'] and not question_options:
+                return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response({'errors': 'question is missing'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=question)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -252,15 +256,24 @@ class UserAnswersAPIView(APIView):
             return Response({'detail': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
-    def post(self, request):
+    def post(self, request, p_pk, q_pk):
         answers = request.data.get('answers')
+        if answers:
+            answers['poll_id'] = get_object_or_404(Poll, id=p_pk).id
+            q = get_object_or_404(Question, id=q_pk)
+            answers['question_id'] = q.id
+        else:
+            return Response({'errors': 'answers is missing'}, status=status.HTTP_403_FORBIDDEN)
         if request.user.is_authenticated:
             answers['user_id'] = request.user.id
         else:
             answers['user_id'] = User.objects.get(username='anonymous').id
-        get_object_or_404(Poll, id=answers['poll_id'])
-        if get_object_or_404(Question, id=answers['question_id']).question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
-            ids_to_add = answers['question_option_id']
+        if q.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+            if not answers['question_option_id']:
+                return Response({'errors': 'question_option_id is missing'}, status=status.HTTP_403_FORBIDDEN)
+            ids_to_add = []
+            for i in answers['question_option_id']:
+                ids_to_add.append(get_object_or_404(QuestionOptions, id=i).id)
             if 'user_answer' in answers.keys():
                 del (answers['user_answer'])
             for id_to_add in ids_to_add:
@@ -269,6 +282,8 @@ class UserAnswersAPIView(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
         else:
+            if not answers['user_answer']:
+                return Response({'errors': 'user_answer is missing'}, status=status.HTTP_403_FORBIDDEN)
             if 'question_option_id' in answers.keys():
                 del (answers['question_option_id'])
             serializer = self.serializer_class(data=answers)
