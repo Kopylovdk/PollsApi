@@ -1,7 +1,7 @@
 import jwt
 from django.contrib.auth.models import AbstractUser
 
-from testproject import settings
+from pollsapi import settings
 
 
 class User(AbstractUser):
