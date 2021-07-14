@@ -96,7 +96,7 @@ qo_create = {"question_options": {
     "question_answer": "Тестовое добавление варианта ответа"
 }}
 
-qo_result = requests.post(f'http://127.0.0.1:8000/api/questionOptions/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
+qo_result = requests.post(f'http://127.0.0.1:8000/api/question_options/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
                           headers=headers, json=qo_create)
 print(f'Создание варианта ответа {qo_result.status_code}:\n{qo_result.json()}')
 
@@ -104,7 +104,7 @@ qo_update = {"question_options": {
     "question_answer": "Тестовое изменение"
 }}
 
-result = requests.patch(f'http://127.0.0.1:8000/api/questionOptions/{qo_result.json()["question_options"]["id"] if qo_result.status_code == 201 else 1}',
+result = requests.patch(f'http://127.0.0.1:8000/api/question_options/{qo_result.json()["question_options"]["id"] if qo_result.status_code == 201 else 1}',
                         headers=headers, json=qo_update)
 print(f'Изменение варианта ответа {result.status_code}:\n{result.json()}')
 
@@ -129,8 +129,7 @@ user_answer = {"answers": {
 }
 }
 result = requests.post(f'http://127.0.0.1:8000/api/questions/'
-                       f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}'
-                       f'/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}/answers/',
+                       f'{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}/answers/',
                        headers=headers, json=user_answer)
 print(f'Создание 1 варианта ответа {result.status_code}:\n{result.json()}')
 
@@ -139,7 +138,6 @@ user_answer_2 = {"answers": {
 }
 
 result = requests.post(f'http://127.0.0.1:8000/api/questions/'
-                       f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}/'
                        f'{result_t.json()["question"]["id"] if result_t.status_code == 201 else 1}/answers/',
                        headers=headers, json=user_answer_2)
 print(f'Создание 2 варианта ответа {result.status_code}:\n{result.json()}')

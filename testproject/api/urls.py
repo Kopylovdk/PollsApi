@@ -14,7 +14,7 @@ urlpatterns = [
     path('polls/<int:pk>', views.PollsAPIView.as_view()),
 
     path('questions/<int:pk>', views.QuestionAPIView.as_view()),
-    path('questions/<int:p_pk>/<int:q_pk>/answers/', views.UserAnswersAPIView.as_view()),
+    path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view()),
 
-    path('questionOptions/<int:pk>', views.QuestionOptionsAPIView.as_view()),
+    path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view()),
 ]

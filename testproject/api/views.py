@@ -256,12 +256,12 @@ class UserAnswersAPIView(APIView):
             return Response({'detail': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
-    def post(self, request, p_pk, q_pk):
+    def post(self, request, pk):
         answers = request.data.get('answers')
         if answers:
-            answers['poll_id'] = get_object_or_404(Poll, id=p_pk).id
-            q = get_object_or_404(Question, id=q_pk)
+            q = get_object_or_404(Question, id=pk)
             answers['question_id'] = q.id
+            answers['poll_id'] = q.poll_id.id
         else:
             return Response({'errors': 'answers is missing'}, status=status.HTTP_403_FORBIDDEN)
         if request.user.is_authenticated:
