@@ -1,3 +1,5 @@
+from copy import copy
+
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -105,6 +107,8 @@ class PollsAPIView(APIView):
             keys = new_poll.keys()
             if 'start_date' in keys:
                 del (new_poll['start_date'])
+            if 'is_active' in keys:
+                del (new_poll['is_active'])
             serializer = self.serializer_class(instance=poll, data=new_poll, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -116,18 +120,16 @@ class PollsAPIView(APIView):
     def delete(self, request, pk):
         if request.data:
             return Response({'errors': 'JSON not available'}, status=status.HTTP_400_BAD_REQUEST)
-        poll = get_object_or_404(Poll, id=pk)
-        if poll.is_active:
-            p_deactivation(False, poll)
+        p = get_object_or_404(Poll, id=pk)
+        if p.is_active:
+            p.is_active = False
         else:
-            p_deactivation(True, poll)
-        return Response({'detail': f'Active change to {poll.is_active}'}, status.HTTP_200_OK)
-
-
-def p_deactivation(choice, poll):
-    poll.is_active = choice
-    poll.save()
-    q_deactivation(choice, p_id=poll.id)
+            p.is_active = True
+        serializer = self.serializer_class(instance=p, data={'is_active': p.is_active}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        q_deactivation(choice=p.is_active, p_id=p.id)
+        return Response({'detail': f'Active change to {p.is_active}'}, status.HTTP_200_OK)
 
 
 class QuestionAPIView(APIView):
@@ -164,7 +166,10 @@ class QuestionAPIView(APIView):
     def patch(self, request, pk):
         if not request.data:
             return Response({'errors': 'No data'}, status=status.HTTP_400_BAD_REQUEST)
+
         new_question = request.data.get('question')
+        if 'is_active' in new_question.keys():
+            del (new_question['is_active'])
         q = get_object_or_404(Question, id=pk)
         serializer = self.serializer_class(instance=q, data=new_question, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -176,24 +181,28 @@ class QuestionAPIView(APIView):
             return Response({'errors': 'JSON not available'}, status=status.HTTP_400_BAD_REQUEST)
         q = get_object_or_404(Question, id=pk)
         if q.is_active:
-            q_deactivation(choice=False, q_obj=q)
+            q.is_active = False
         else:
-            q_deactivation(choice=True, q_obj=q)
+            q.is_active = True
+        serializer = self.serializer_class(instance=q, data={'is_active': q.is_active}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        qo_deactivation(q.is_active, q_id=q.id)
         return Response({'detail': f'Active change to {q.is_active}'}, status.HTTP_200_OK)
 
 
-def q_deactivation(choice, p_id=None, q_obj=None):
-    if p_id:
-        for q in Question.objects.filter(poll_id=p_id):
-            q.is_active = choice
-            q.save()
-            if q.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
-                qo_deactivation(choice=q.is_active, q_id=q.id)
-    else:
-        q_obj.is_active = choice
-        q_obj.save()
-        if q_obj.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
-            qo_deactivation(choice=q_obj.is_active, q_id=q_obj.id)
+def q_deactivation(choice, p_id):
+    for q in Question.objects.filter(poll_id=p_id):
+        q.is_active = choice
+        q.save()
+        if q.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+            qo_deactivation(choice=q.is_active, q_id=q.id)
+
+
+def qo_deactivation(choice, q_id):
+    for qo in QuestionOptions.objects.filter(question_id=q_id):
+        qo.is_active = choice
+        qo.save()
 
 
 class QuestionOptionsAPIView(APIView):
@@ -222,20 +231,13 @@ class QuestionOptionsAPIView(APIView):
             return Response({'errors': 'JSON not available'}, status=status.HTTP_400_BAD_REQUEST)
         qo = get_object_or_404(QuestionOptions, id=pk)
         if qo.is_active:
-            qo_deactivation(choice=False, qo_obj=qo)
+            qo.is_active = False
         else:
-            qo_deactivation(choice=True, qo_obj=qo)
+            qo.is_active = True
+        serializer = self.serializer_class(instance=qo, data={'is_active': qo.is_active}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({'detail': f'Active change to {qo.is_active}'}, status.HTTP_200_OK)
-
-
-def qo_deactivation(choice, q_id=None, qo_obj=None):
-    if q_id:
-        for qo in QuestionOptions.objects.filter(question_id=q_id):
-            qo.is_active = choice
-            qo.save()
-    else:
-        qo_obj.is_active = choice
-        qo_obj.save()
 
 
 class UserAnswersAPIView(APIView):
