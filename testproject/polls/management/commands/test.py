@@ -1,6 +1,7 @@
 import requests
 # Для проверки исключений необходимо изменить username с admin на test (строка 14)
-# _________________ПОЛЬЗОВАТЕЛИ_____________________
+print('_________________ПОЛЬЗОВАТЕЛИ_____________________')
+print('__________РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ________________')
 data_user_reg = {'user': {
     'username': 'test',
     'password': '123456',
@@ -10,13 +11,17 @@ data_user_reg = {'user': {
 result = requests.post('http://127.0.0.1:8000/api/users/register/', json=data_user_reg)
 print(f'Регистрация {result.status_code}:\n{result.json()}')
 
-data_user_auth = {'user': {
+
+print('__________АВТОРИЗАЦИЯ СУПЕР ПОЛЬЗОВАТЕЛЯ________________')
+
+data_user_admin_auth = {'user': {
     'username': 'admin',
     'password': '123456'
 }}
 
-result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_auth)
+result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_admin_auth)
 headers = {"Authorization": f'Token {result.json()["user"]["token"]}'}
+print(f'Результат авторизации супер пользователя {result.status_code}:\n{result.json()}')
 
 result = requests.get('http://127.0.0.1:8000/api/users/', headers=headers)
 print(f'Данные пользователя {result.status_code}:\n{result.json()}')
@@ -28,7 +33,9 @@ data_user_update = {'user': {
 result = requests.patch('http://127.0.0.1:8000/api/users/', headers=headers, json=data_user_update)
 print(f'Обновленные пользователя {result.status_code}:\n{result.json()}')
 
-# _________________ОПРОСЫ____________________
+
+print('_________________ОПРОСЫ____________________')
+
 
 pol_create = {"polls": {
     "name": "test",
@@ -41,15 +48,29 @@ result_create = requests.post('http://127.0.0.1:8000/api/polls/', headers=header
 print(f'Создание опроса {result_create.status_code}:\n{result_create.json()}')
 
 pol_update = {"polls": {
-    "is_active": False,
+    "description": "test update",
 }}
 
-result = requests.patch(f'http://127.0.0.1:8000/api/polls/1',
+result = requests.patch(f'http://127.0.0.1:8000/api/polls/'
+                        f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
                         headers=headers, json=pol_update)
 print(f'Изменение опроса {result.status_code}:\n{result.json()}')
 
+result = requests.delete(f'http://127.0.0.1:8000/api/polls/'
+                         f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+                         headers=headers)
+print(f'Изменение активности ОПРОСА - ОК {result.status_code}:\n{result.json()}')
+
+
+result = requests.delete(f'http://127.0.0.1:8000/api/polls/50', headers=headers)
+print(f'Изменение активности ОПРОСА - Error {result.status_code}:\n{result.json()}')
+
 result = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
 print(f'ВСЕ опросы {result.status_code}:\n{result.json()}')
+
+
+print('_________________Вопросы____________________')
+
 
 q_create_er = {"question": {
     "question_type": "MANY_ANSWERS",
@@ -88,15 +109,31 @@ q_update = {"question": {
     "question_text": "Изменение текста вопроса",
 }}
 
-result = requests.patch(f'http://127.0.0.1:8000/api/questions/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
+result = requests.patch(f'http://127.0.0.1:8000/api/questions/'
+                        f'{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
                         headers=headers, json=q_update)
 print(f'Изменение вопроса {result.status_code}:\n{result.json()}')
+
+
+result = requests.delete(f'http://127.0.0.1:8000/api/questions/'
+                         f'{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
+                         headers=headers)
+print(f'Изменение активности ВОПРОСА - ОК {result.status_code}:\n{result.json()}')
+
+
+result = requests.delete(f'http://127.0.0.1:8000/api/questions/1000', headers=headers)
+print(f'Изменение активности ВОПРОСА - Error {result.status_code}:\n{result.json()}')
+
+
+print('_________________Ответы на вопрос____________________')
+
 
 qo_create = {"question_options": {
     "question_answer": "Тестовое добавление варианта ответа"
 }}
 
-qo_result = requests.post(f'http://127.0.0.1:8000/api/question_options/{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
+qo_result = requests.post(f'http://127.0.0.1:8000/api/question_options/'
+                          f'{result_m.json()["question"]["id"] if result_m.status_code == 201 else 1}',
                           headers=headers, json=qo_create)
 print(f'Создание варианта ответа {qo_result.status_code}:\n{qo_result.json()}')
 
@@ -104,7 +141,8 @@ qo_update = {"question_options": {
     "question_answer": "Тестовое изменение"
 }}
 
-result = requests.patch(f'http://127.0.0.1:8000/api/question_options/{qo_result.json()["question_options"]["id"] if qo_result.status_code == 201 else 1}',
+result = requests.patch(f'http://127.0.0.1:8000/api/question_options/'
+                        f'{qo_result.json()["question_options"]["id"] if qo_result.status_code == 201 else 1}',
                         headers=headers, json=qo_update)
 print(f'Изменение варианта ответа {result.status_code}:\n{result.json()}')
 
@@ -113,13 +151,35 @@ data_user_auth = {'user': {
     'password': '123456',
 }}
 
+result = requests.delete(f'http://127.0.0.1:8000/api/question_options/'
+                         f'{qo_result.json()["question_options"]["id"] if qo_result.status_code == 201 else 1}',
+                         headers=headers)
+print(f'Изменение активности ОТВЕТА НА ВОПРОС - ОК {result.status_code}:\n{result.json()}')
+
+result = requests.delete(f'http://127.0.0.1:8000/api/question_options/10000', headers=headers)
+print(f'Изменение активности ОТВЕТА НА ВОПРОС - Error {result.status_code}:\n{result.json()}')
+
+
+print('_________________Авторизация обычного пользователя____________________')
+
+data_user_auth = {'user': {
+    'username': data_user_admin_auth.get('user').get('username'),
+    'password': data_user_admin_auth.get('user').get('password')
+}}
+
 result = requests.post('http://127.0.0.1:8000/api/users/login/', json=data_user_auth)
 headers = {"Authorization": f'Token {result.json()["user"]["token"]}'}
+print(f'Результат авторизации обычного пользователя {result.status_code}:\n{result.json()}')
+
+print('_________________Действия обычного пользователя____________________')
+
 
 result_get_all = requests.get(f'http://127.0.0.1:8000/api/polls/', headers=headers)
 print(f'ВСЕ АКТИВНЫЕ опросы {result_get_all.status_code}:\n{result_get_all.json()}')
 
-result = requests.get(f'http://127.0.0.1:8000/api/polls/{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}', headers=headers)
+result = requests.get(f'http://127.0.0.1:8000/api/polls/'
+                      f'{result_create.json()["polls"]["id"] if result_create.status_code == 201 else 1}',
+                      headers=headers)
 print(f'Конкретный опрос {result.status_code}:\n{result.json()}')
 
 user_answer = {"answers": {
@@ -148,3 +208,5 @@ print(f'Все ответы пользователя {result.status_code}:\n{res
 result = requests.get(f'http://127.0.0.1:8000/api/users/polls/')
 print(f'Все ответы пользователя ОШИБКА {result.status_code}:\n{result.json()}')
 
+result = requests.delete(f'http://127.0.0.1:8000/api/question_options/10000', headers=headers)
+print(f'Изменение активности ОТВЕТА НА ВОПРОС обычным пользователем - Error {result.status_code}:\n{result.json()}')
