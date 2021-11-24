@@ -35,10 +35,7 @@ python manage.py default_users_create
 ```
 python manage.py runserver
 ```
-#### Заполняет базу данных тестовыми данными (необязательно).
-```
-python manage.py fill_db
-```
+
 
 После успешного запуска сервера возможно использовать API. Его описание ниже.
 
@@ -50,6 +47,10 @@ python manage.py full_clear
 #### Создает базу данных и миграции
 ```
 python manage.py db_migrate
+```
+#### Заполняет базу данных тестовыми данными (необязательно).
+```
+python manage.py fill_db
 ```
 ### Запуск тестов
 ```
