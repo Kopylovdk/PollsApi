@@ -26,7 +26,12 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py createuser
 ```
-#### Пробуем запустить сервер
+Можно выполнить команду default_users_create для автоматического создания супер пользователя и anonymous. Внимание! В этом случае пользователи будут созданы с данными по умолчанию. Для создания пользователей с другими данными, используйте команды, указанные выше.
+```
+python manage.py default_users_create
+```
+
+#### Запускаем сервер
 ```
 python manage.py runserver
 ```
@@ -34,13 +39,18 @@ python manage.py runserver
 ```
 python manage.py fill_db
 ```
-#### Удаляет базу данных и очищает миграции
-```
-python manage.py clear_and_migrate
-```
+
 После успешного запуска сервера возможно использовать API. Его описание ниже.
 
-# Отладка
+# Команды
+#### Удаляет базу данных, очищает миграции
+```
+python manage.py full_clear
+```
+#### Создает базу данных и миграции
+```
+python manage.py db_migrate
+```
 ### Запуск тестов
 ```
 python manage.py test

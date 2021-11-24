@@ -9,11 +9,7 @@ class Command(BaseCommand):
     tables = [Poll, Question, QuestionOptions, UsersAnswers, User]
 
     def handle(self, *args, **options):
-
         self.clear_all_tables()
-        User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
-        User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123456')
-
         users = User.objects.all()
 
         polls = [

@@ -17,9 +17,6 @@ class Command(BaseCommand):
             os.remove(db_path)
             print('База данны удалена.\n')
 
-        print(os.popen('py manage.py makemigrations').read())
-        print(os.popen('py manage.py migrate').read())
-
     def remove_files(self, path):
         for file in os.listdir(path):
             filepath = os.path.join(path, file)
