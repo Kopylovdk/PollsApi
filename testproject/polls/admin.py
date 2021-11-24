@@ -1,5 +1,5 @@
 
-from testproject.settings import DEBUG
+from main.settings import DEBUG
 if DEBUG:
     from api.models import User
     from django.contrib import admin
