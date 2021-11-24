@@ -189,6 +189,8 @@ class PollUpdateDeleteTest(APITestCase):
         result = self.client.delete(self.url_pk, format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('detail' in result.json())
+        self.assertFalse(Poll.objects.get(id=self.poll.id).is_active)
+
 
 # def test_question_crud(self):
 #     pass
