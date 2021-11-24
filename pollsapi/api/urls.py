@@ -10,8 +10,8 @@ urlpatterns = [
 
     path('users/polls/', views.UserAnswersAPIView.as_view(), name='user_polls_get'),
 
-    path('polls/', views.PollsAPIView.as_view(), name='poll_create_get_all'),
-    path('polls/<int:pk>', views.PollsAPIView.as_view(), name='poll_get_one_update_delete'),
+    path('polls/', views.PollsAPIView.as_view(), name='poll'),
+    path('polls/<int:pk>', views.PollsAPIView.as_view(), name='poll_pk'),
 
     path('questions/<int:pk>', views.QuestionAPIView.as_view(), name='question_create_update_delete'),
     path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view(), name='user_question_answer'),

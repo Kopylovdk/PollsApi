@@ -92,7 +92,7 @@ class PollsAPIView(APIView):
             serializer.save()
             return Response({'polls': serializer.data}, status=status.HTTP_201_CREATED)
         else:
-            return Response({'detail': 'You do not have permission to perform this action.'},
+            return Response({'errors': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
     def patch(self, request, pk):
@@ -109,24 +109,28 @@ class PollsAPIView(APIView):
             serializer = self.serializer_class(instance=poll, data=new_poll, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response(serializer.data, status.HTTP_200_OK)
+            return Response({'polls': serializer.data}, status.HTTP_200_OK)
         else:
-            return Response({'detail': 'You do not have permission to perform this action.'},
+            return Response({'errors': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, pk):
-        if request.data:
-            return Response({'errors': 'JSON not available'}, status=status.HTTP_400_BAD_REQUEST)
-        p = get_object_or_404(Poll, id=pk)
-        if p.is_active:
-            p.is_active = False
+        if request.user.is_superuser:
+            if request.data:
+                return Response({'errors': 'JSON not available'}, status=status.HTTP_400_BAD_REQUEST)
+            p = get_object_or_404(Poll, id=pk)
+            if p.is_active:
+                p.is_active = False
+            else:
+                p.is_active = True
+            serializer = self.serializer_class(instance=p, data={'is_active': p.is_active}, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            q_deactivation(choice=p.is_active, p_id=p.id)
+            return Response({'detail': f'Active change to {p.is_active}'}, status.HTTP_200_OK)
         else:
-            p.is_active = True
-        serializer = self.serializer_class(instance=p, data={'is_active': p.is_active}, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        q_deactivation(choice=p.is_active, p_id=p.id)
-        return Response({'detail': f'Active change to {p.is_active}'}, status.HTTP_200_OK)
+            return Response({'errors': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
 
 class QuestionAPIView(APIView):
@@ -276,7 +280,7 @@ class UserAnswersAPIView(APIView):
                 dict_with_polls['polls'].append(data)
             return Response(dict_with_polls, status=status.HTTP_200_OK)
         else:
-            return Response({'detail': 'You do not have permission to perform this action.'},
+            return Response({'error': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, pk):

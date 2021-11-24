@@ -1,8 +1,7 @@
 from main.settings import DEBUG
 if DEBUG:
-    from api.models import User
+    from api.models import User, Poll, Question, QuestionOptions, UsersAnswers
     from django.contrib import admin
-    from api.models import Poll, Question, QuestionOptions, UsersAnswers
 
 
     @admin.register(User)

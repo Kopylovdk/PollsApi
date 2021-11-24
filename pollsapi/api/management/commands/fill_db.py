@@ -10,8 +10,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.clear_all_tables()
 
-        users = User.objects.all()
-
         polls = [
             {'name': 'Опрос номер 1',
              'description': 'Описание опроса номер 1',
@@ -309,6 +307,8 @@ class Command(BaseCommand):
             QuestionOptions.objects.create(**item)
 
         qp = QuestionOptions.objects.all()
+        users = User.objects.all()
+
         user_answers = [
             {'user_id': users[0],
              'poll_id': pol[0],
