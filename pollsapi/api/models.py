@@ -11,8 +11,7 @@ class User(AbstractUser):
 
     def _generate_jwt_token(self):
         """
-        Генерирует веб-токен JSON, в котором хранится идентификатор этого
-        пользователя
+        Генерирует веб-токен JSON, в котором хранится идентификатор пользователя
         """
         token = jwt.encode({'id': self.pk}, settings.SECRET_KEY, algorithm='HS256')
         return token
@@ -69,7 +68,3 @@ class UsersAnswers(models.Model):
 
     def __str__(self):
         return f'{self.user_id} {self.poll_id}'
-
-    # class Meta:
-    #     constraints = [models.UniqueConstraint(fields=['poll_id', 'question_id', 'question_option_id'],
-    #                                            name='unique_UsersAnswers_poll_id_question_id_question_option_id')]
