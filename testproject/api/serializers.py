@@ -1,9 +1,6 @@
-
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-
-from api.models import User
-from polls.models import Poll, Question, UsersAnswers, QuestionOptions
+from api.models import User, Poll, Question, UsersAnswers, QuestionOptions
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

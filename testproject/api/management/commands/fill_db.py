@@ -1,15 +1,15 @@
 import datetime
 
-from api.models import User
+from api.models import User, Poll, Question, UsersAnswers, QuestionOptions
 from django.core.management import BaseCommand
-from polls.models import Poll, Question, UsersAnswers, QuestionOptions
 
 
 class Command(BaseCommand):
-    tables = [Poll, Question, QuestionOptions, UsersAnswers, User]
+    tables = [Poll, Question, UsersAnswers, QuestionOptions]
 
     def handle(self, *args, **options):
         self.clear_all_tables()
+
         users = User.objects.all()
 
         polls = [
@@ -394,10 +394,8 @@ class Command(BaseCommand):
              'user_answer': 'Текстовый ответ 3 на вопрос 3 опроса 5'},
         ]
 
-
         for item in user_answers:
             UsersAnswers.objects.create(**item)
-
 
         self.count_tables_data()
 

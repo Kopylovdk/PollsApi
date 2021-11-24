@@ -5,7 +5,7 @@ import os
 class Command(BaseCommand):
     def handle(self, *args, **options):
         current_path = os.getcwd()
-        apps_to_clear_migrations = ['api', 'polls']
+        apps_to_clear_migrations = ['api']
 
         for app in apps_to_clear_migrations:
             path = os.path.join(current_path, f'{app}\\migrations')

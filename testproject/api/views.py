@@ -1,15 +1,12 @@
-from copy import copy
-
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from api.models import User
+from api.models import User, Poll, Question, QuestionOptions, UsersAnswers
 from api.serializers import LoginSerializer, PollsSerializer, RegistrationSerializer, UserSerializer, \
     QuestionSerializer, UserAnswerSerializer, QuestionOptionsSerializer
 from api.renderers import UserJSONRenderer, ClassJSONRenderer
-from polls.models import Poll, Question, QuestionOptions, UsersAnswers
 
 
 class UserLoginAPIView(APIView):
