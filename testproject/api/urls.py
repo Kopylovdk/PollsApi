@@ -8,13 +8,14 @@ urlpatterns = [
     path('users/register/', views.UserRegistrationAPIView.as_view(), name='register'),
     path('users/', views.UserRetrieveUpdateAPIView.as_view(), name='data'),
 
-    path('users/polls/', views.UserAnswersAPIView.as_view()),
+    path('users/polls/', views.UserAnswersAPIView.as_view(), name='user_polls_get'),
 
-    path('polls/', views.PollsAPIView.as_view()),
-    path('polls/<int:pk>', views.PollsAPIView.as_view()),
+    path('polls/', views.PollsAPIView.as_view(), name='poll_create_get_all'),
+    path('polls/<int:pk>', views.PollsAPIView.as_view(), name='poll_get_one_update_delete'),
 
-    path('questions/<int:pk>', views.QuestionAPIView.as_view()),
-    path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view()),
+    path('questions/<int:pk>', views.QuestionAPIView.as_view(), name='question_create_update_delete'),
+    path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view(), name='user_question_answer'),
 
-    path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view()),
+    path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view(),
+         name='question_options_create_update_delete'),
 ]
