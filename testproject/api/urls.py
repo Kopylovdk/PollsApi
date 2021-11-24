@@ -4,9 +4,9 @@ import api.views as views
 app_name = 'api'
 
 urlpatterns = [
-    path('users/login/', views.UserLoginAPIView.as_view()),
-    path('users/register/', views.UserRegistrationAPIView.as_view()),
-    path('users/', views.UserRetrieveUpdateAPIView.as_view()),
+    path('users/login/', views.UserLoginAPIView.as_view(), name='login'),
+    path('users/register/', views.UserRegistrationAPIView.as_view(), name='register'),
+    path('users/', views.UserRetrieveUpdateAPIView.as_view(), name='data'),
 
     path('users/polls/', views.UserAnswersAPIView.as_view()),
 
