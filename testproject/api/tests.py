@@ -46,27 +46,27 @@ class UserTest(APITestCase):
         self.assertEqual(db_user_data_get, result_user_update.json())
 
 
-class PollTest(APITestCase):
-    super_user = {'username': 'admin', 'email': 'kopylovdk@gmail.com', 'password': '123456'}
-    User.objects.create_superuser(**super_user)
-
-    # anonymous_user = {'username': 'anonymous', 'email': 'anonymous@anonymous.ru', 'password': '123456'}
-    # User.objects.create_user(**anonymous_user)
-
-    def test_poll_crud(self):
-        print(User.objects.get(username='admin'))
-
-
-class QuestionTest(APITestCase):
-    def test_question_crud(self):
-        pass
-
-
-class QuestionOptionsTest(APITestCase):
-    def test_question_options_crud(self):
-        pass
-
-
-class UsersAnswersTest(APITestCase):
-    def test_users_answers_crud(self):
-        pass
+# class PollTest(APITestCase):
+#     super_user = {'username': 'admin', 'email': 'kopylovdk@gmail.com', 'password': '123456'}
+#     User.objects.create_superuser(**super_user)
+#
+#     # anonymous_user = {'username': 'anonymous', 'email': 'anonymous@anonymous.ru', 'password': '123456'}
+#     # User.objects.create_user(**anonymous_user)
+#
+#     def test_poll_crud(self):
+#         print(User.objects.get(username='admin'))
+#
+#
+# class QuestionTest(APITestCase):
+#     def test_question_crud(self):
+#         pass
+#
+#
+# class QuestionOptionsTest(APITestCase):
+#     def test_question_options_crud(self):
+#         pass
+#
+#
+# class UsersAnswersTest(APITestCase):
+#     def test_users_answers_crud(self):
+#         pass
