@@ -12,7 +12,7 @@ class Command(BaseCommand):
             self.remove_files(path)
             print(f'Миграции для {app} очищены.')
 
-        db_path = os.path.join(current_path, 'test.sqlite3')
+        db_path = os.path.join(current_path, 'db.sqlite3')
         if os.path.exists(db_path):
             os.remove(db_path)
             print('База данны удалена.\n')
