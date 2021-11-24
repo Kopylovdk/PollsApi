@@ -30,7 +30,10 @@ python manage.py createuser
 ```
 python manage.py default_users_create
 ```
-
+#### Для изменения списка разрешенных хостов в файле main.settings необходимо изменить значение ALLOWED_HOSTS  
+```
+ALLOWED_HOSTS = ['Адрес_1', 'Адрес_2', т.д.]
+```
 #### Запускаем сервер
 ```
 python manage.py runserver
