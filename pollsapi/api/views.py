@@ -142,16 +142,20 @@ class QuestionAPIView(APIView):
         question = request.data.get('question')
         question_options = request.data.get('question_options')
         if question:
-            question['poll_id'] = get_object_or_404(Poll, pk=pk).id
-            if question['question_type'] in ['MANY_ANSWERS', 'ONE_ANSWER'] and not question_options:
-                return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
+            p = get_object_or_404(Poll, pk=pk)
+            if p.is_active:
+                question['poll_id'] = p.id
+                if question['question_type'] == 'CHOSE_ANSWER' and not question_options:
+                    return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response({'errors': 'Poll is deactivate'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({'errors': 'question is missing'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=question)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         to_send = {'question': serializer.data}
-        if question['question_type'] in ['MANY_ANSWERS', 'ONE_ANSWER'] and question_options:
+        if question['question_type'] == 'CHOSE_ANSWER' and question_options:
             to_send['question_options'] = []
             for qo in question_options:
                 qo_to_create = {'question_answer': qo,
@@ -167,15 +171,20 @@ class QuestionAPIView(APIView):
     def patch(self, request, pk):
         if not request.data:
             return Response({'errors': 'No data'}, status=status.HTTP_400_BAD_REQUEST)
-
         new_question = request.data.get('question')
-        if 'is_active' in new_question.keys():
+        q_keys = new_question.keys()
+        if 'poll_id' in q_keys:
+            if not Poll.objects.get(id=new_question['poll_id']).is_active:
+                return Response({'errors': 'Poll is deactivate'}, status=status.HTTP_404_NOT_FOUND)
+        if 'is_active' in q_keys:
             del (new_question['is_active'])
+        if 'question_type' in q_keys:
+            del (new_question['question_type'])
         q = get_object_or_404(Question, id=pk)
         serializer = self.serializer_class(instance=q, data=new_question, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status.HTTP_200_OK)
+        return Response({'question': serializer.data}, status.HTTP_200_OK)
 
     def delete(self, request, pk):
         if request.data:
@@ -196,7 +205,7 @@ def q_deactivation(choice, p_id):
     for q in Question.objects.filter(poll_id=p_id):
         q.is_active = choice
         q.save()
-        if q.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+        if q.question_type == 'CHOSE_ANSWER':
             qo_deactivation(choice=q.is_active, q_id=q.id)
 
 
@@ -262,7 +271,7 @@ class UserAnswersAPIView(APIView):
                     q_serializer = QuestionSerializer(quest)
                     to_data = {'question': q_serializer.data,
                                'answers': []}
-                    if quest.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+                    if quest.question_type == 'CHOSE_ANSWER':
                         span = ua.filter(question_id=quest.id)
                         if span:
                             for i in span:
@@ -295,7 +304,7 @@ class UserAnswersAPIView(APIView):
             answers['user_id'] = request.user.id
         else:
             answers['user_id'] = User.objects.get(username='anonymous').id
-        if q.question_type in ['MANY_ANSWERS', 'ONE_ANSWER']:
+        if q.question_type == 'CHOSE_ANSWER':
             if not answers['question_option_id']:
                 return Response({'errors': 'question_option_id is missing'}, status=status.HTTP_403_FORBIDDEN)
             ids_to_add = []
