@@ -319,10 +319,8 @@ class QuestionUpdateDeleteTest(APITestCase):
         self.q_many = Question.objects.create(**self.new_q_data['question'])
         self.update_data = 'data after update'
         del self.new_q_data['question']["poll_id"]
-        # self.url = reverse('api:question', kwargs={'pk': self.poll.id})
 
     def test_update_question_no_auth(self):
-
         self.new_q_data['question']["question_text"] = self.update_data
         result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
                                    format='json')
@@ -367,7 +365,6 @@ class QuestionUpdateDeleteTest(APITestCase):
         self.new_q_data['question']["poll_id"] = self.poll_de_act.id
         result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
-
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('errors' in result.json())
 
@@ -389,9 +386,97 @@ class QuestionUpdateDeleteTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('detail' in result.json())
 
+    # TODO: добавить тест изменение активности
+
+
+class QuestionOptionsCreateTest(APITestCase):
+    def setUp(self):
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        data_add_to_tst_db()
+        self.url = reverse('api:question_options', kwargs={'pk': Question.objects.get(id=4).id})
+        self.qo_data = {"question_options": [{"question_answer": "Тестовое добавление варианта ответа 10"},
+                                             {"question_answer": "Тестовое добавление варианта ответа 11"}]
+                        }
+        self.to_create_q = {'poll_id': Poll.objects.get(id=1),
+                            'question_type': 'CHOSE_ANSWER',
+                            'question_text': 'Тест',
+                            'is_active': False
+                            }
+        self.qo_deact_id = Question.objects.create(**self.to_create_q).id
+
+    def test_create_question_options_no_auth(self):
+        result = self.client.post(self.url, self.qo_data, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_question_options_bad_question_id(self):
+        result = self.client.post(reverse('api:question_options', kwargs={'pk': 10000}), self.qo_data, format='json',
+                                  HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_question_options_deact_question(self):
+        result = self.client.post(reverse('api:question_options', kwargs={'pk': self.qo_deact_id}), self.qo_data,
+                                  format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_question_no_data(self):
+        result = self.client.post(self.url, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_question_options(self):
+        result = self.client.post(self.url, self.qo_data,
+                                  format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertTrue('question_options' in result.json())
+        self.assertTrue('id' in result.json()['question_options'][0])
+
+
+class QuestionOptionsUpdateDeleteTest(APITestCase):
+    def setUp(self):
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        data_add_to_tst_db()
+        self.data_to_update = {"question_options": {"question_answer": "Тестовое изменение варианта ответа"}}
+        self.url = reverse('api:question_options', kwargs={'pk': QuestionOptions.objects.get(id=4).id})
+        self.to_create_q = {'poll_id': Poll.objects.get(id=1),
+                            'question_type': 'CHOSE_ANSWER',
+                            'question_text': 'Тест',
+                            'is_active': False
+                            }
+        self.qo_deact_id = Question.objects.create(**self.to_create_q).id
+
+    def test_update_question_options_no_auth(self):
+        result = self.client.patch(self.url, self.data_to_update, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_update_question_options_bad_question_option_id(self):
+        result = self.client.patch(reverse('api:question_options', kwargs={'pk': 10000}), self.data_to_update, format='json',
+                                  HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_question_no_data(self):
+        result = self.client.patch(self.url, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    # TODO: Проверка, изменение, когда не активен варианта ответа и когда не активен Вопрос для этого варианта ответа
+    # def test_update_question_options_deact_question(self):
+    #     result = self.client.patch(reverse('api:question_options', kwargs={'pk': self.qo_deact_id}), self.data_to_update,
+    #                               format='json', HTTP_AUTHORIZATION=self.admin_token)
+    #     self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+    #     self.assertTrue('errors' in result.json())
+    #     print(result.json(), result.status_code)
+
+
+
+
 # def test_question_options_crud(self):
-    # print(result.json(), result.status_code)
-    # pass
+# print(result.json(), result.status_code)
+# pass
 
 # def test_users_answers_crud(self):
 #     pass
@@ -424,8 +509,7 @@ def data_add_to_tst_db():
         Poll.objects.create(**item)
 
     TEXT = 'TEXT_ANSWER'
-    ONE_ANSWER = 'ONE_ANSWER'
-    MANY_ANSWERS = 'MANY_ANSWERS'
+    CHOSE_ANSWER = 'CHOSE_ANSWER'
     pol = Poll.objects.all()
 
     questions = [
@@ -439,22 +523,22 @@ def data_add_to_tst_db():
          'question_type': TEXT,
          'question_text': 'Вопрос 3 опроса 1 с текстовым ответом'},
         {'poll_id': pol[0],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 4 опроса 1 с одним правильным ответом'},
         {'poll_id': pol[0],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 5 опроса 1 с одним правильным ответом'},
         {'poll_id': pol[0],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 6 опроса 1 с одним правильным ответом'},
         {'poll_id': pol[0],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 7 опроса 1 с несколькими правильными ответом'},
         {'poll_id': pol[0],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 8 опроса 1 с несколькими правильными ответом'},
         {'poll_id': pol[0],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 9 опроса 1 с несколькими правильными ответом'},
         #  ОПРОС 2
         {'poll_id': pol[1],
@@ -467,22 +551,22 @@ def data_add_to_tst_db():
          'question_type': TEXT,
          'question_text': 'Вопрос 3 опроса 2 с текстовым ответом'},
         {'poll_id': pol[1],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 4 опроса 2 с одним правильным ответом'},
         {'poll_id': pol[1],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 5 опроса 2 с одним правильным ответом'},
         {'poll_id': pol[1],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 6 опроса 2 с одним правильным ответом'},
         {'poll_id': pol[1],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 7 опроса 2 с несколькими правильными ответом'},
         {'poll_id': pol[1],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 8 опроса 2 с несколькими правильными ответом'},
         {'poll_id': pol[1],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 9 опроса 2 с несколькими правильными ответом'},
         #  ОПРОС 3
         {'poll_id': pol[2],
@@ -495,22 +579,22 @@ def data_add_to_tst_db():
          'question_type': TEXT,
          'question_text': 'Вопрос 3 опроса 3 с текстовым ответом'},
         {'poll_id': pol[2],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 4 опроса 3 с одним правильным ответом'},
         {'poll_id': pol[2],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 5 опроса 3 с одним правильным ответом'},
         {'poll_id': pol[2],
-         'question_type': ONE_ANSWER,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 6 опроса 3 с одним правильным ответом'},
         {'poll_id': pol[2],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 7 опроса 3 с несколькими правильными ответом'},
         {'poll_id': pol[2],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 8 опроса 3 с несколькими правильными ответом'},
         {'poll_id': pol[2],
-         'question_type': MANY_ANSWERS,
+         'question_type': CHOSE_ANSWER,
          'question_text': 'Вопрос 9 опроса 3 с несколькими правильными ответом'},
         # Опрос 5
         {'poll_id': pol[4],

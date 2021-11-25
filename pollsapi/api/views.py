@@ -222,19 +222,33 @@ class QuestionOptionsAPIView(APIView):
 
     def post(self, request, pk):
         question_options = request.data.get('question_options')
-        question_options['question_id'] = pk
-        serializer = self.serializer_class(data=question_options)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'question_options': serializer.data}, status=status.HTTP_201_CREATED)
+        if question_options:
+            q = get_object_or_404(Question, id=pk)
+            if q.is_active:
+                to_send = []
+                for q_i in question_options:
+                    q_i['question_id'] = q.id
+                    serializer = self.serializer_class(data=q_i)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                    to_send.append(serializer.data)
+                return Response({'question_options': to_send}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'errors': 'Question is deactivate'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
 
     def patch(self, request, pk):
         new_qo = request.data.get('question_options')
-        qo = get_object_or_404(QuestionOptions, id=pk)
-        serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'question_options': serializer.data}, status.HTTP_200_OK)
+        if new_qo:
+            qo = get_object_or_404(QuestionOptions, id=pk)
+            # if Question.objects.get(id=n)
+            serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({'question_options': serializer.data}, status.HTTP_200_OK)
+        else:
+            return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, pk):
         if request.data:

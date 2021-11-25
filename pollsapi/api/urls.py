@@ -16,6 +16,5 @@ urlpatterns = [
     path('questions/<int:pk>', views.QuestionAPIView.as_view(), name='question'),
     path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view(), name='user_question_answer'),
 
-    path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view(),
-         name='question_options_create_update_delete'),
+    path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view(), name='question_options'),
 ]
