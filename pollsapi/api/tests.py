@@ -386,7 +386,11 @@ class QuestionUpdateDeleteTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('detail' in result.json())
 
-    # TODO: добавить тест изменение активности
+    def test_delete_question(self):
+        result = self.client.delete(reverse('api:question', kwargs={'pk': self.q_many.id}),
+                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('detail' in result.json())
 
 
 class QuestionOptionsCreateTest(APITestCase):
