@@ -449,7 +449,12 @@ class QuestionOptionsUpdateDeleteTest(APITestCase):
                             'question_text': 'Тест',
                             'is_active': False
                             }
-        self.qo_deact_id = Question.objects.create(**self.to_create_q).id
+        self.to_create_qo = {'question_id': Question.objects.get(id=5),
+                             'question_answer': 'test',
+                             'is_active': False
+                             }
+        self.qo_deact_id = QuestionOptions.objects.create(**self.to_create_qo).id
+        self.q_deact_id = Question.objects.create(**self.to_create_q).id
 
     def test_update_question_options_no_auth(self):
         result = self.client.patch(self.url, self.data_to_update, format='json')
@@ -457,8 +462,14 @@ class QuestionOptionsUpdateDeleteTest(APITestCase):
         self.assertTrue('detail' in result.json())
 
     def test_update_question_options_bad_question_option_id(self):
-        result = self.client.patch(reverse('api:question_options', kwargs={'pk': 10000}), self.data_to_update, format='json',
-                                  HTTP_AUTHORIZATION=self.admin_token)
+        result = self.client.patch(reverse('api:question_options', kwargs={'pk': 10000}), self.data_to_update,
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_update_question_options_bad_question_id(self):
+        self.data_to_update['question_options']['question_id'] = 100000
+        result = self.client.patch(self.url, self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('detail' in result.json())
 
@@ -467,20 +478,30 @@ class QuestionOptionsUpdateDeleteTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
 
-    # TODO: Проверка, изменение, когда не активен варианта ответа и когда не активен Вопрос для этого варианта ответа
-    # def test_update_question_options_deact_question(self):
-    #     result = self.client.patch(reverse('api:question_options', kwargs={'pk': self.qo_deact_id}), self.data_to_update,
-    #                               format='json', HTTP_AUTHORIZATION=self.admin_token)
-    #     self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
-    #     self.assertTrue('errors' in result.json())
-    #     print(result.json(), result.status_code)
+    def test_update_question_options_deact_question_option(self):
+        result = self.client.patch(reverse('api:question_options', kwargs={'pk': self.qo_deact_id}),
+                                   self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('errors' in result.json())
 
+    def test_update_question_options_deact_question(self):
+        self.data_to_update['question_options']['question_id'] = self.q_deact_id
+        result = self.client.patch(self.url, self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('errors' in result.json())
 
+    def test_update_question_options(self):
+        result = self.client.patch(self.url, self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('question_options' in result.json())
+        qo = QuestionOptions.objects.get(id=result.json()['question_options']['id'])
+        correct_data = {'question_options': {'id': qo.id, 'question_answer': qo.question_answer,
+                                             'is_active': qo.is_active, 'question_id': qo.question_id.id}}
+        self.assertEqual(correct_data, result.json())
 
+    # TODO: добавить тесты удаления вариантов ответов
+        # print(result.json(), result.status_code)
 
-# def test_question_options_crud(self):
-# print(result.json(), result.status_code)
-# pass
 
 # def test_users_answers_crud(self):
 #     pass
