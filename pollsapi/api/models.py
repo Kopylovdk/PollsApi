@@ -32,12 +32,12 @@ class Poll(models.Model):
 class Question(models.Model):
     """Модель вопроса"""
     TEXT = 'TEXT_ANSWER'
-    ONE_ANSWER = 'ONE_ANSWER'
-    MANY_ANSWERS = 'MANY_ANSWERS'
+    CHOSE_ANSWER = 'CHOSE_ANSWER'
+    # MANY_ANSWERS = 'MANY_ANSWERS'
     QST_TYPES = (
         (TEXT, 'Текстовый ответ'),
-        (ONE_ANSWER, 'Один ответ'),
-        (MANY_ANSWERS, 'Несколько ответов'),
+        (CHOSE_ANSWER, 'Варианты ответов'),
+        # (MANY_ANSWERS, 'Несколько ответов'),
     )
     poll_id = models.ForeignKey(Poll, on_delete=models.CASCADE, verbose_name='Опрос',
                                 null=True, blank=True)
