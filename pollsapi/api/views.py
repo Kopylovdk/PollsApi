@@ -241,12 +241,19 @@ class QuestionOptionsAPIView(APIView):
     def patch(self, request, pk):
         new_qo = request.data.get('question_options')
         if new_qo:
+            if 'question_id' in new_qo:
+                q = get_object_or_404(Question, id=new_qo['question_id'])
+                if not q.is_active:
+                    return Response({'errors': 'Question in Question option data is deactivate'},
+                                    status=status.HTTP_404_NOT_FOUND)
             qo = get_object_or_404(QuestionOptions, id=pk)
-            # if Question.objects.get(id=n)
-            serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response({'question_options': serializer.data}, status.HTTP_200_OK)
+            if qo.is_active:
+                serializer = self.serializer_class(instance=qo, data=new_qo, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response({'question_options': serializer.data}, status.HTTP_200_OK)
+            else:
+                return Response({'errors': 'Question option is deactivate'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
 
