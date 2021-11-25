@@ -346,7 +346,7 @@ id вопроса в URL
 ```json
 {"question_options": [
          {
-           "question_answer": "str"}
+           "question_answer": "str"}, ...n
       ]
 }
 ```
