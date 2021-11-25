@@ -192,16 +192,209 @@ class PollUpdateDeleteTest(APITestCase):
         self.assertFalse(Poll.objects.get(id=self.poll.id).is_active)
 
 
-# def test_question_crud(self):
-#     pass
-#
+class QuestionCreateTest(APITestCase):
+    def setUp(self):
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.q_types = {'text': "TEXT_ANSWER",
+                        'many': "CHOSE_ANSWER",
+                        }
+        self.new_p_data = {"name": "test",
+                           "description": "test",
+                           "start_date": datetime.date.today(),
+                           "end_date": datetime.date.today() + datetime.timedelta(days=2)
+                           }
+        self.poll = Poll.objects.create(**self.new_p_data)
+        self.new_p_data['is_active'] = False
+        self.poll_de_act = Poll.objects.create(**self.new_p_data)
+        self.url = reverse('api:question', kwargs={'pk': self.poll.id})
+        self.new_q_data_bad = {"question": {"question_type": 'select from self.q_types in test',
+                                            "question_text": "Тестовое создание"
+                                            }
+                               }
+        self.new_q_data = {"question": {"question_type": 'select from self.q_types in test',
+                                        "question_text": "Тестовое создание"
+                                        },
+                           'question_options': ['test 1', 'test 2', 'test 3']
+                           }
+
+    def test_create_question_no_auth_or_admin(self):
+        result = self.client.post(self.url, self.new_q_data, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_question_bad_poll_id(self):
+        result = self.client.post(reverse('api:question', kwargs={'pk': 10000}), self.new_q_data, format='json',
+                                  HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_question_poll_deactivate(self):
+        self.new_q_data["question"]["question_type"] = self.q_types['text']
+        result = self.client.post(reverse('api:question', kwargs={'pk': self.poll_de_act.id}), self.new_q_data,
+                                  format='json',
+                                  HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_question_no_data(self):
+        result = self.client.post(self.url, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_question_bad_data_no_question_option(self):
+        self.new_q_data_bad["question"]["question_type"] = self.q_types['many']
+        result = self.client.post(self.url, self.new_q_data_bad, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_question_bad_q_type(self):
+        result = self.client.post(self.url, self.new_q_data, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue('errors' in result.json())
+        self.assertTrue('question_type' in result.json()['errors'])
+
+    def test_create_question_text_answer(self):
+        self.new_q_data["question"]["question_type"] = self.q_types['text']
+        del (self.new_q_data['question_options'])
+        result = self.client.post(self.url, self.new_q_data, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertTrue('question' in result.json())
+        self.assertTrue('id' in result.json()['question'])
+        q = Question.objects.get(id=result.json()['question']['id'])
+        correct_data = {'question': {'id': q.id,
+                                     'question_type': q.question_type,
+                                     'question_text': q.question_text,
+                                     'is_active': q.is_active,
+                                     'poll_id': q.poll_id.id}}
+        self.assertEqual(correct_data, result.json())
+
+    def test_create_question_chose_answer(self):
+        self.new_q_data["question"]["question_type"] = self.q_types['many']
+        result = self.client.post(self.url, self.new_q_data, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertTrue('question' in result.json())
+        self.assertTrue('id' in result.json()['question'])
+        self.assertTrue('question_options' in result.json())
+        self.assertTrue('id' in result.json()['question_options'][0])
+        q = Question.objects.get(id=result.json()['question']['id'])
+        correct_data = {'question': {'id': q.id,
+                                     'question_type': q.question_type,
+                                     'question_text': q.question_text,
+                                     'is_active': q.is_active,
+                                     'poll_id': q.poll_id.id},
+                        'question_options': []
+                        }
+        qo = QuestionOptions.objects.filter(question_id=q.id)
+
+        for qo_i in qo:
+            correct_data['question_options'].append({'id': qo_i.id, 'question_answer': qo_i.question_answer,
+                                                     'is_active': qo_i.is_active, 'question_id': qo_i.question_id.id})
+
+        self.assertEqual(correct_data, result.json())
+
+
+class QuestionUpdateDeleteTest(APITestCase):
+    def setUp(self):
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.q_types = {'text': "TEXT_ANSWER",
+                        'many': "CHOSE_ANSWER",
+                        }
+        self.new_p_data = {"name": "test",
+                           "description": "test",
+                           "start_date": datetime.date.today(),
+                           "end_date": datetime.date.today() + datetime.timedelta(days=2)
+                           }
+        self.poll = Poll.objects.create(**self.new_p_data)
+        self.new_p_data['is_active'] = False
+        self.poll_de_act = Poll.objects.create(**self.new_p_data)
+        self.new_q_data = {"question": {"question_type": 'some',
+                                        "question_text": "Тестовое создание",
+                                        "poll_id": self.poll
+                                        },
+                           'question_options': ['test 1', 'test 2', 'test 3']
+                           }
+        self.new_q_data['question']["question_type"] = self.q_types.get('text')
+        self.q_text = Question.objects.create(**self.new_q_data['question'])
+        self.new_q_data['question']["question_type"] = self.q_types.get('many')
+        self.q_many = Question.objects.create(**self.new_q_data['question'])
+        self.update_data = 'data after update'
+        del self.new_q_data['question']["poll_id"]
+        # self.url = reverse('api:question', kwargs={'pk': self.poll.id})
+
+    def test_update_question_no_auth(self):
+
+        self.new_q_data['question']["question_text"] = self.update_data
+        result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
+                                   format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_update_question_no_data(self):
+        result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}),
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue('errors' in result.json())
+
+    def test_update_question_bad_pk(self):
+        self.new_q_data['question']["question_text"] = self.update_data
+        result = self.client.patch(reverse('api:question', kwargs={'pk': 10000}), self.new_q_data,
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_update_question_chose_answer(self):
+        self.new_q_data['question']["question_text"] = self.update_data
+        result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('question' in result.json())
+        check = Question.objects.get(id=self.q_many.id)
+        self.assertEqual(check.question_text, self.update_data)
+        self.assertEqual(check.id, result.json()['question']['id'])
+
+    def test_update_question_text_answer(self):
+        self.new_q_data['question']["question_text"] = self.update_data
+        result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('question' in result.json())
+        check = Question.objects.get(id=self.q_many.id)
+        self.assertEqual(check.question_text, self.update_data)
+        self.assertEqual(check.id, result.json()['question']['id'])
+
+    def test_update_question_text_answer_poll_id(self):
+        self.new_q_data['question']["poll_id"] = self.poll_de_act.id
+        result = self.client.patch(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
+                                   format='json', HTTP_AUTHORIZATION=self.admin_token)
+
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('errors' in result.json())
+
+    def test_delete_question_no_auth(self):
+        result = self.client.delete(reverse('api:question', kwargs={'pk': self.q_many.id}), data=self.new_q_data,
+                                    format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_delete_question_with_data(self):
+        result = self.client.delete(reverse('api:question', kwargs={'pk': self.q_many.id}), self.new_q_data,
+                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue('errors' in result.json())
+
+    def test_delete_question_bad_pk(self):
+        result = self.client.delete(reverse('api:question', kwargs={'pk': 100000}),
+                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
 # def test_question_options_crud(self):
-#     pass
-#
+    # print(result.json(), result.status_code)
+    # pass
+
 # def test_users_answers_crud(self):
 #     pass
-
-
 def data_add_to_tst_db():
     polls = [
         {'name': 'Опрос номер 1',

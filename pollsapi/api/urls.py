@@ -13,7 +13,7 @@ urlpatterns = [
     path('polls/', views.PollsAPIView.as_view(), name='poll'),
     path('polls/<int:pk>', views.PollsAPIView.as_view(), name='poll_pk'),
 
-    path('questions/<int:pk>', views.QuestionAPIView.as_view(), name='question_create_update_delete'),
+    path('questions/<int:pk>', views.QuestionAPIView.as_view(), name='question'),
     path('questions/<int:pk>/answers/', views.UserAnswersAPIView.as_view(), name='user_question_answer'),
 
     path('question_options/<int:pk>', views.QuestionOptionsAPIView.as_view(),
