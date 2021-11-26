@@ -556,5 +556,117 @@ class QuestionOptionsDeleteTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('detail' in result.json())
 
-# TODO: добавить тесты для UserAnswersAPIView
-# print(result.json(), result.status_code)
+
+class UserAnswersReadTest(APITestCase):
+    def setUp(self):
+        self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
+        data_add_to_tst_db()
+        self.url = reverse('api:user_polls_get')
+
+    def test_user_answers_get_answers_no_auth(self):
+        result = self.client.get(self.url, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_user_answers_get_answers(self):
+        result = self.client.get(self.url, format='json', HTTP_AUTHORIZATION=self.user_token)
+
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('polls' in result.json())
+        self.assertTrue(isinstance(result.json()['polls'], list))
+        self.assertEqual(len(result.json()['polls']), 3)
+
+
+class UserAnswersCreateTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='test', email='test@test.ru', password='123456')
+        self.user_token = f"Token {self.user.token}"
+        self.anonymous = User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru',
+                                                  password='123456')
+        self.p_data = {'name': 'Опрос номер 1',
+                       'description': 'Описание опроса номер 1',
+                       'start_date': datetime.date.today(),
+                       'end_date': datetime.date.today() + datetime.timedelta(days=2)}
+        self.p = Poll.objects.create(**self.p_data)
+        self.to_create_q_chose = {'poll_id': self.p,
+                                  'question_type': 'CHOSE_ANSWER',
+                                  'question_text': 'Тест',
+                                  }
+        self.q_chose = Question.objects.create(**self.to_create_q_chose)
+        self.to_create_qo_1 = {'question_id': self.q_chose,
+                               'question_answer': 'test 1',
+                               }
+        self.to_create_qo_2 = {'question_id': self.q_chose,
+                               'question_answer': 'test 2',
+                               }
+        self.to_create_qo_3 = {'question_id': self.q_chose,
+                               'question_answer': 'test 2',
+                               }
+        self.qo_1 = QuestionOptions.objects.create(**self.to_create_qo_1)
+        self.qo_2 = QuestionOptions.objects.create(**self.to_create_qo_2)
+        self.qo_3 = QuestionOptions.objects.create(**self.to_create_qo_3)
+        self.to_create_q_text = {'poll_id': self.p,
+                                 'question_type': 'TEXT_ANSWER',
+                                 'question_text': 'Тест',
+                                 }
+        self.q_text = Question.objects.create(**self.to_create_q_text)
+        self.url = 'api:user_question_answer'
+        self.answer = {"answers": {"question_option_id": [self.qo_1.id, self.qo_2.id], "user_answer": "eggs and span"}}
+
+    def test_create_user_answers_no_answer_data(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_text.id}), {'eggs': 'eggs'},
+                                  format='json', HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_user_answers_bad_pk(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': 100000}), self.answer,
+                                  format='json', HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_user_answers_no_question_option_id_in_data(self):
+        del self.answer['answers']['question_option_id']
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_chose.id}), self.answer,
+                                  format='json', HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_user_answers_bad_question_option_id_in_data(self):
+        self.answer['answers']['question_option_id'] = [1, 333]
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_chose.id}), self.answer,
+                                  format='json', HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_create_user_answers_auth_chose(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_chose.id}), self.answer,
+                                  format='json', HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertEqual({'answers': 'Data saved'}, result.json())
+        self.assertEqual(len(UsersAnswers.objects.filter(user_id=self.user.id)), 2)
+
+    def test_create_user_answers_no_auth_chose(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_chose.id}), self.answer, format='json')
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertEqual({'answers': 'Data saved'}, result.json())
+        self.assertEqual(len(UsersAnswers.objects.filter(user_id=self.anonymous.id)), 2)
+
+    def test_create_user_answers_no_user_answer_data(self):
+        del self.answer['answers']['user_answer']
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_text.id}), self.answer, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('errors' in result.json())
+
+    def test_create_user_answers_no_auth_text(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_text.id}), self.answer, format='json')
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertEqual({'answers': 'Data saved'}, result.json())
+        self.assertEqual(len(UsersAnswers.objects.filter(user_id=self.anonymous.id)), 1)
+
+    def test_create_user_answers_auth_text(self):
+        result = self.client.post(reverse(self.url, kwargs={'pk': self.q_text.id}), self.answer, format='json',
+                                  HTTP_AUTHORIZATION=self.user_token)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertEqual({'answers': 'Data saved'}, result.json())
+        self.assertEqual(len(UsersAnswers.objects.filter(user_id=self.user.id)), 1)
