@@ -26,13 +26,13 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py createuser
 ```
-Можно выполнить команду default_users_create для автоматического создания супер пользователя и anonymous. Внимание! В этом случае пользователи будут созданы с данными по умолчанию. Для создания пользователей с другими данными, используйте команды, указанные выше.
-```
-python manage.py default_users_create
-```
 #### Для изменения списка разрешенных хостов в файле main.settings необходимо изменить значение ALLOWED_HOSTS  
 ```
 ALLOWED_HOSTS = ['Адрес_1', 'Адрес_2', т.д.]
+```
+#### Для изменения ecret_key в файле main.settings необходимо изменить значение SECRET_KEY  
+```
+SECRET_KEY = 'Ваш ключ'
 ```
 #### Запускаем сервер
 ```
@@ -51,9 +51,9 @@ python manage.py full_clear
 ```
 python manage.py db_migrate
 ```
-#### Заполняет базу данных тестовыми данными (необязательно).
+#### Создает супер пользователя и anonymous. Внимание! В этом случае пользователи будут созданы с данными по умолчанию. Для создания пользователей с другими данными, используйте команды, указанные выше.
 ```
-python manage.py fill_db
+python manage.py default_users_create
 ```
 ### Запуск тестов
 ```
