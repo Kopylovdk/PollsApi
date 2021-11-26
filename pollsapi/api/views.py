@@ -140,11 +140,11 @@ class QuestionAPIView(APIView):
 
     def post(self, request, pk):
         question = request.data.get('question')
-        question_options = request.data.get('question_options')
         if question:
             p = get_object_or_404(Poll, pk=pk)
             if p.is_active:
                 question['poll_id'] = p.id
+                question_options = request.data.get('question_options')
                 if question['question_type'] == 'CHOSE_ANSWER' and not question_options:
                     return Response({'errors': 'question_options is missing'}, status=status.HTTP_403_FORBIDDEN)
             else:
