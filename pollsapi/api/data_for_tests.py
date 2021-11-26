@@ -252,6 +252,18 @@ def data_add_to_tst_db():
          'question_id': q[8],
          'question_option_id': qp[21]},
 
+        {'user_id': users[0],
+         'poll_id': pol[1],
+         'question_id': q[7],
+         'user_answer': 'Текстовый ответ 1 на вопрос 7 опроса 2'},
+        {'user_id': users[0],
+         'poll_id': pol[2],
+         'question_id': q[12],
+         'question_option_id': qp[11]},
+        {'user_id': users[0],
+         'poll_id': pol[2],
+         'question_id': q[12],
+         'question_option_id': qp[12]},
     ]
     for item in user_answers:
         UsersAnswers.objects.create(**item)
