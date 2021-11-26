@@ -499,12 +499,31 @@ class QuestionOptionsUpdateDeleteTest(APITestCase):
                                              'is_active': qo.is_active, 'question_id': qo.question_id.id}}
         self.assertEqual(correct_data, result.json())
 
-    # TODO: добавить тесты удаления вариантов ответов
-        # print(result.json(), result.status_code)
+    def test_delete_question_options_no_auth(self):
+        result = self.client.delete(self.url, format='json')
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue('detail' in result.json())
+
+    def test_delete_question_options_with_data(self):
+        result = self.client.delete(self.url, self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue('errors' in result.json())
+
+    def test_delete_question_options_bad_pk(self):
+        result = self.client.delete(reverse('api:question_options', kwargs={'pk': 100000}),
+                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
+
+    def test_delete_question(self):
+        result = self.client.delete(self.url, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertTrue('detail' in result.json())
 
 
-# def test_users_answers_crud(self):
-#     pass
+# TODO: добавить тесты для UserAnswersAPIView
+# print(result.json(), result.status_code)
+
 def data_add_to_tst_db():
     polls = [
         {'name': 'Опрос номер 1',
