@@ -320,7 +320,7 @@ class QuestionUpdateTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('detail' in result.json())
 
-    def test_update_question_chose_answer_poll_deact(self):
+    def test_update_question_chose_answer_poll_inactive(self):
         self.p_data['is_active'] = False
         self.q_data['question']["poll_id"] = Poll.objects.create(**self.p_data).id
         result = self.client.patch(self.url, self.q_data,
@@ -422,7 +422,7 @@ class QuestionOptionsCreateTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('detail' in result.json())
 
-    def test_create_question_options_deact_question(self):
+    def test_create_question_options_inactive_question(self):
         self.to_create_q['is_active'] = False
         result = self.client.post(reverse('api:question_options',
                                           kwargs={'pk': Question.objects.create(**self.to_create_q).id}),
@@ -483,18 +483,18 @@ class QuestionOptionsUpdateTest(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
 
-    def test_update_question_options_deact_question_option(self):
+    def test_update_question_options_inactive_question_option(self):
         self.to_create_qo['is_active'] = False
-        qo_deact_id = QuestionOptions.objects.create(**self.to_create_qo).id
-        result = self.client.patch(reverse('api:question_options', kwargs={'pk': qo_deact_id}),
+        qo_inactive_id = QuestionOptions.objects.create(**self.to_create_qo).id
+        result = self.client.patch(reverse('api:question_options', kwargs={'pk': qo_inactive_id}),
                                    self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('errors' in result.json())
 
-    def test_update_question_options_deact_question(self):
+    def test_update_question_options_inactive_question(self):
         self.to_create_q['is_active'] = False
-        q_deact_id = Question.objects.create(**self.to_create_q).id
-        self.data_to_update['question_options']['question_id'] = q_deact_id
+        q_inactive_id = Question.objects.create(**self.to_create_q).id
+        self.data_to_update['question_options']['question_id'] = q_inactive_id
         result = self.client.patch(self.url, self.data_to_update, format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue('errors' in result.json())
