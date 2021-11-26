@@ -61,9 +61,9 @@ class PollsAPIView(APIView):
     def get(self, request, pk=None):
         if pk is not None:
             poll = get_object_or_404(Poll, id=pk, is_active=True)
-            serializer_poll = self.serializer_class(poll)
+            # serializer_poll =
             dict_to_return = {
-                'poll': serializer_poll.data,
+                'poll': self.serializer_class(poll).data,
                 'questions': []
             }
             for q in Question.objects.filter(poll_id=pk, is_active=True):
@@ -282,7 +282,6 @@ class UserAnswersAPIView(APIView):
             dict_with_polls = {'polls': []}
             ua = UsersAnswers.objects.filter(user_id=user_id)
             q = Question.objects.all()
-            qo = QuestionOptions.objects.all()
             for u_p in ua.values_list('poll_id').distinct():
                 p = Poll.objects.filter(id=u_p[0]).first()
                 p_serializer = PollsSerializer(p)
@@ -296,7 +295,8 @@ class UserAnswersAPIView(APIView):
                         span = ua.filter(question_id=quest.id)
                         if span:
                             for i in span:
-                                qo_serializer = QuestionOptionsSerializer(qo.filter(id=i.question_option_id.id).first())
+                                qo_serializer = QuestionOptionsSerializer(
+                                    QuestionOptions.objects.filter(id=i.question_option_id.id).first())
                                 to_data['answers'].append(qo_serializer.data)
                         else:
                             to_data['answers'].append('No answer')
@@ -310,7 +310,7 @@ class UserAnswersAPIView(APIView):
                 dict_with_polls['polls'].append(data)
             return Response(dict_with_polls, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'You do not have permission to perform this action.'},
+            return Response({'errors': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, pk):
@@ -326,7 +326,7 @@ class UserAnswersAPIView(APIView):
         else:
             answers['user_id'] = User.objects.get(username='anonymous').id
         if q.question_type == 'CHOSE_ANSWER':
-            if not answers['question_option_id']:
+            if 'question_option_id' not in answers:
                 return Response({'errors': 'question_option_id is missing'}, status=status.HTTP_403_FORBIDDEN)
             ids_to_add = []
             for i in answers['question_option_id']:
@@ -339,7 +339,7 @@ class UserAnswersAPIView(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
         else:
-            if not answers['user_answer']:
+            if 'user_answer' not in answers:
                 return Response({'errors': 'user_answer is missing'}, status=status.HTTP_403_FORBIDDEN)
             if 'question_option_id' in answers.keys():
                 del (answers['question_option_id'])
