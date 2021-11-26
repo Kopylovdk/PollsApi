@@ -33,14 +33,11 @@ class Question(models.Model):
     """Модель вопроса"""
     TEXT = 'TEXT_ANSWER'
     CHOSE_ANSWER = 'CHOSE_ANSWER'
-    # MANY_ANSWERS = 'MANY_ANSWERS'
     QST_TYPES = (
         (TEXT, 'Текстовый ответ'),
         (CHOSE_ANSWER, 'Варианты ответов'),
-        # (MANY_ANSWERS, 'Несколько ответов'),
     )
-    poll_id = models.ForeignKey(Poll, on_delete=models.CASCADE, verbose_name='Опрос',
-                                null=True, blank=True)
+    poll_id = models.ForeignKey(Poll, on_delete=models.CASCADE, verbose_name='Опрос', blank=False)
     question_type = models.CharField(verbose_name='Тип вопроса', max_length=12, choices=QST_TYPES, default=TEXT)
     question_text = models.TextField(verbose_name='Вопрос', blank=False)
     is_active = models.BooleanField(verbose_name='Активность', default=True, blank=False)
