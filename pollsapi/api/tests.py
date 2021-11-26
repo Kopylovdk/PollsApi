@@ -14,7 +14,7 @@ class UserCreateTest(APITestCase):
             "email": 'test@test.ru'
         }}
 
-    def test_user_create(self):
+    def test_create_user(self):
         result = self.client.post(reverse('api:register'), self.data, format='json')
         self.assertEqual(result.status_code, status.HTTP_201_CREATED)
         self.assertTrue('token' in result.json()['user'])
@@ -30,7 +30,7 @@ class UserAuthTest(APITestCase):
         }}
         self.headers = f'Token {self.user.token}'
 
-    def test_user_login(self):
+    def test_auth_user(self):
         result = self.client.post(reverse('api:login'), self.data_login, format='json')
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.token, result.json()["user"]["token"])
@@ -47,7 +47,7 @@ class UserGetDataTest(APITestCase):
                                       'last_name': self.user.last_name}
                              }
 
-    def test_user_get_data(self):
+    def test_get_user_data(self):
         result = self.client.get(reverse('api:data'), HTTP_AUTHORIZATION=self.headers, format='json')
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertEqual(self.correct_data, result.json())
@@ -65,7 +65,7 @@ class UserUpdateTest(APITestCase):
                              }
         self.data_update = {'user': {'first_name': 'test'}}
 
-    def test_user_update(self):
+    def test_update_user(self):
         result = self.client.patch(reverse('api:data'), self.data_update, HTTP_AUTHORIZATION=self.headers,
                                    format='json')
         self.correct_data['user']['first_name'] = User.objects.get(username='test').first_name
@@ -73,14 +73,11 @@ class UserUpdateTest(APITestCase):
         self.assertEqual(self.correct_data, result.json())
 
 
-class PollsCreateReadTest(APITestCase):
+class PollsCreateTest(APITestCase):
     def setUp(self):
         self.url = reverse('api:poll')
         self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
         self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
-        data_add_to_tst_db()
-        self.polls = Poll.objects.all()
-        self.url_pk = reverse('api:poll_pk', kwargs={'pk': self.polls[0].id})
         self.new_poll_data = {"polls": {"name": "test",
                                         "description": "test",
                                         "start_date": datetime.date.today(),
@@ -88,39 +85,52 @@ class PollsCreateReadTest(APITestCase):
                                         }
                               }
 
-    def test_poll_superuser_create(self):
-        result = self.client.post(self.url, self.new_poll_data,
-                                  HTTP_AUTHORIZATION=self.admin_token, format='json')
+    def test_create_poll_superuser(self):
+        result = self.client.post(self.url, self.new_poll_data, HTTP_AUTHORIZATION=self.admin_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_201_CREATED)
         self.assertTrue('id' in result.json()['polls'])
 
-    def test_poll_user_create(self):
-        result = self.client.post(self.url, self.new_poll_data,
-                                  HTTP_AUTHORIZATION=self.user_token, format='json')
+    def test_create_poll_user(self):
+        result = self.client.post(self.url, self.new_poll_data, HTTP_AUTHORIZATION=self.user_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
 
-    def test_poll_get_one(self):
-        result = self.client.get(self.url_pk, HTTP_AUTHORIZATION=self.user_token, format='json')
+
+class PollsReadTest(APITestCase):
+    def setUp(self):
+        self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        data_add_to_tst_db()
+        self.new_poll_data = {"polls": {"name": "test",
+                                        "description": "test",
+                                        "start_date": datetime.date.today(),
+                                        "end_date": datetime.date.today() + datetime.timedelta(days=2)
+                                        }
+                              }
+        self.url = reverse('api:poll')
+
+    def test_get_one_poll(self):
+        result = self.client.get(reverse('api:poll_pk', kwargs={'pk': Poll.objects.all()[0].id}),
+                                 HTTP_AUTHORIZATION=self.user_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('poll' in result.json())
         self.assertTrue('questions' in result.json())
         self.assertTrue('question_options' in result.json()['questions'][0])
 
-    def test_polls_superuser_get_all(self):
+    def test_get_all_polls(self):
         result = self.client.get(self.url, HTTP_AUTHORIZATION=self.admin_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('id' in result.json()['polls'][0])
-        self.assertEqual(len(self.polls), len(result.json()['polls']))
+        self.assertEqual(len(Poll.objects.all()), len(result.json()['polls']))
 
-    def test_polls_user_get_all_active(self):
+    def test_get_all_active_polls(self):
         result = self.client.get(self.url, format='json')
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('id' in result.json()['polls'][0])
-        self.assertEqual(len(self.polls.filter(is_active=True)), len(result.json()['polls']))
+        self.assertEqual(len(Poll.objects.filter(is_active=True)), len(result.json()['polls']))
 
 
-class PollUpdateDeleteTest(APITestCase):
+class PollUpdateTest(APITestCase):
     def setUp(self):
         self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
         self.anonymous_token = f"Token {User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123456').token}"
@@ -128,69 +138,67 @@ class PollUpdateDeleteTest(APITestCase):
                           'description': 'Описание опроса номер 1',
                           'start_date': datetime.date.today(),
                           'end_date': datetime.date.today() + datetime.timedelta(days=2)}
-        self.poll = Poll.objects.create(**self.poll_data)
-        self.url_pk = reverse('api:poll_pk', kwargs={'pk': self.poll.id})
-        self.url_pk_bad = reverse('api:poll_pk', kwargs={'pk': 10000})
-        self.correct_poll_data = {'polls': {'id': self.poll.id,
-                                            'is_active': self.poll.is_active,
-                                            'name': self.poll.name,
-                                            'description': self.poll.description,
-                                            'start_date': self.poll.start_date,
-                                            'end_date': self.poll.end_date}}
+        self.url = reverse('api:poll_pk', kwargs={'pk': Poll.objects.create(**self.poll_data).id})
         self.poll_data_update = {"polls": {"description": "test update"}}
 
-    def test_poll_no_data(self):
-        result = self.client.patch(self.url_pk,
-                                   HTTP_AUTHORIZATION=self.admin_token, format='json')
+    def test_update_poll_no_data(self):
+        result = self.client.patch(self.url, HTTP_AUTHORIZATION=self.admin_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue('errors' in result.json())
 
-    def test_poll_bad_pk(self):
-        result = self.client.patch(self.url_pk_bad, self.poll_data_update,
+    def test_update_poll_bad_pk(self):
+        result = self.client.patch(reverse('api:poll_pk', kwargs={'pk': 10000}), self.poll_data_update,
                                    HTTP_AUTHORIZATION=self.admin_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue('detail' in result.json())
 
-    def test_poll_superuser_update(self):
-        result = self.client.patch(self.url_pk, self.poll_data_update,
-                                   HTTP_AUTHORIZATION=self.admin_token, format='json')
-        self.assertEqual(result.status_code, status.HTTP_200_OK)
-        self.correct_poll_data['polls']['description'] = Poll.objects.get(id=self.poll.id).description
-        self.correct_poll_data['polls']['id'] = self.poll.id
-        self.correct_poll_data['polls']['is_active'] = True
-        span = result.json()['polls']['start_date'].split('-')
-        result.json()['polls']['start_date'] = datetime.date(int(span[0]), int(span[1]), int(span[2]))
-        span = result.json()['polls']['end_date'].split('-')
-        result.json()['polls']['end_date'] = datetime.date(int(span[0]), int(span[1]), int(span[2]))
-        self.assertEqual(self.correct_poll_data, result.json())
-
-    def test_poll_user_update(self):
-        result = self.client.patch(self.url_pk, self.poll_data_update,
+    def test_update_poll_user(self):
+        result = self.client.patch(self.url, self.poll_data_update,
                                    HTTP_AUTHORIZATION=self.anonymous_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
 
-    def test_poll_user_delete_bad_data(self):
-        result = self.client.delete(self.url_pk, self.poll_data_update,
+    def test_update_poll_superuser(self):
+        result = self.client.patch(self.url, self.poll_data_update, HTTP_AUTHORIZATION=self.admin_token, format='json')
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        self.assertEqual(Poll.objects.get(id=result.json()['polls']['id']).description,
+                         result.json()['polls']['description'])
+
+
+class PollDeleteTest(APITestCase):
+    def setUp(self):
+        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.anonymous_token = f"Token {User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123456').token}"
+        self.poll_data = {'name': 'Опрос номер 1',
+                          'description': 'Описание опроса номер 1',
+                          'start_date': datetime.date.today(),
+                          'end_date': datetime.date.today() + datetime.timedelta(days=2)}
+        self.url = reverse('api:poll_pk', kwargs={'pk': Poll.objects.create(**self.poll_data).id})
+
+    def test_delete_poll_bad_data(self):
+        result = self.client.delete(self.url, {"eggs": {"eggs": "eggs"}},
                                     HTTP_AUTHORIZATION=self.admin_token, format='json')
         self.assertEqual(result.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue('errors' in result.json())
 
-    def test_poll_user_delete_not_allowed(self):
-        result = self.client.delete(self.url_pk, format='json')
+    def test_delete_poll_no_auth(self):
+        result = self.client.delete(self.url, format='json')
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
-        result = self.client.delete(self.url_pk, format='json', HTTP_AUTHORIZATION=self.anonymous_token)
+        result = self.client.delete(self.url, format='json', HTTP_AUTHORIZATION=self.anonymous_token)
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue('errors' in result.json())
 
-    def test_poll_user_delete_bad_pk(self):
-        result = self.client.delete(self.url_pk_bad, format='json', HTTP_AUTHORIZATION=self.admin_token)
+    def test_delete_poll_bad_pk(self):
+        result = self.client.delete(reverse('api:poll_pk', kwargs={'pk': 10000}),
+                                    format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_poll_superuser_delete(self):
-        result = self.client.delete(self.url_pk, format='json', HTTP_AUTHORIZATION=self.admin_token)
+        result = self.client.delete(self.url, format='json', HTTP_AUTHORIZATION=self.admin_token)
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertTrue('detail' in result.json())
-        self.assertFalse(Poll.objects.get(id=self.poll.id).is_active)
+        self.assertFalse(Poll.objects.get(name='Опрос номер 1').is_active)
 
 
 class QuestionCreateTest(APITestCase):
