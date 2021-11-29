@@ -76,8 +76,10 @@ class UserUpdateTest(APITestCase):
 class PollsCreateTest(APITestCase):
     def setUp(self):
         self.url = reverse('api:poll')
-        self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.user = User.objects.create_user(username='test', email='test@test.ru', password='123456')
+        self.user_token = f"Token {self.user.token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.new_poll_data = {"polls": {"name": "test",
                                         "description": "test",
                                         "start_date": datetime.date.today(),
@@ -98,8 +100,10 @@ class PollsCreateTest(APITestCase):
 
 class PollsReadTest(APITestCase):
     def setUp(self):
-        self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.user = User.objects.create_user(username='test', email='test@test.ru', password='123456')
+        self.user_token = f"Token {self.user.token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         data_add_to_tst_db()
         self.new_poll_data = {"polls": {"name": "test",
                                         "description": "test",
@@ -132,8 +136,10 @@ class PollsReadTest(APITestCase):
 
 class PollUpdateTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
-        self.anonymous_token = f"Token {User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
+        self.anonymous = User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123')
+        self.anonymous_token = f"Token {self.anonymous.token}"
         self.poll_data = {'name': 'Опрос номер 1',
                           'description': 'Описание опроса номер 1',
                           'start_date': datetime.date.today(),
@@ -167,8 +173,10 @@ class PollUpdateTest(APITestCase):
 
 class PollDeleteTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
-        self.anonymous_token = f"Token {User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
+        self.anonymous = User.objects.create_user(username='anonymous', email='anonymous@anonymous.ru', password='123')
+        self.anonymous_token = f"Token {self.anonymous.token}"
         self.poll_data = {'name': 'Опрос номер 1',
                           'description': 'Описание опроса номер 1',
                           'start_date': datetime.date.today(),
@@ -203,7 +211,8 @@ class PollDeleteTest(APITestCase):
 
 class QuestionCreateTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.p_data = {"name": "test",
                        "description": "test",
                        "start_date": datetime.date.today(),
@@ -292,7 +301,8 @@ class QuestionCreateTest(APITestCase):
 
 class QuestionUpdateTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.p_data = {"name": "test",
                        "description": "test",
                        "start_date": datetime.date.today(),
@@ -365,7 +375,8 @@ class QuestionUpdateTest(APITestCase):
 
 class QuestionDeleteTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.p_data = {"name": "test",
                        "description": "test",
                        "start_date": datetime.date.today(),
@@ -404,7 +415,8 @@ class QuestionDeleteTest(APITestCase):
 
 class QuestionOptionsCreateTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.qo_to_create = {"question_options": [{"question_answer": "Тестовое добавление варианта ответа 10"},
                                                   {"question_answer": "Тестовое добавление варианта ответа 11"}]
                              }
@@ -453,7 +465,8 @@ class QuestionOptionsCreateTest(APITestCase):
 
 class QuestionOptionsUpdateTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.data_to_update = {"question_options": {"question_answer": "Тестовое изменение варианта ответа"}}
         self.p_data = {'name': 'Опрос номер 1',
                        'description': 'Описание опроса номер 1',
@@ -519,7 +532,8 @@ class QuestionOptionsUpdateTest(APITestCase):
 
 class QuestionOptionsDeleteTest(APITestCase):
     def setUp(self):
-        self.admin_token = f"Token {User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456').token}"
+        self.admin = User.objects.create_superuser(username='admin', email='admin@admin.ru', password='123456')
+        self.admin_token = f"Token {self.admin.token}"
         self.p_data = {'name': 'Опрос номер 1',
                        'description': 'Описание опроса номер 1',
                        'start_date': datetime.date.today(),
@@ -559,7 +573,8 @@ class QuestionOptionsDeleteTest(APITestCase):
 
 class UserAnswersReadTest(APITestCase):
     def setUp(self):
-        self.user_token = f"Token {User.objects.create_user(username='test', email='test@test.ru', password='123456').token}"
+        self.user = User.objects.create_user(username='test', email='test@test.ru', password='123456')
+        self.user_token = f"Token {self.user.token}"
         data_add_to_tst_db()
         self.url = reverse('api:user_polls_get')
 
