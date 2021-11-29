@@ -16,6 +16,10 @@ class User(AbstractUser):
         token = jwt.encode({'id': self.pk}, settings.SECRET_KEY, algorithm='HS256')
         return token
 
+    class Meta:
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'пользователи'
+
 
 class Poll(models.Model):
     """Модель опроса"""
@@ -27,6 +31,10 @@ class Poll(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'опрос'
+        verbose_name_plural = 'опросы'
 
 
 class Question(models.Model):
@@ -45,6 +53,10 @@ class Question(models.Model):
     def __str__(self):
         return self.question_text
 
+    class Meta:
+        verbose_name = 'вопрос'
+        verbose_name_plural = 'вопросы'
+
 
 class QuestionOptions(models.Model):
     question_id = models.ForeignKey(Question, on_delete=models.CASCADE, verbose_name='Вопрос', blank=False)
@@ -53,6 +65,10 @@ class QuestionOptions(models.Model):
 
     def __str__(self):
         return f'{self.question_answer}'
+
+    class Meta:
+        verbose_name = 'вариант ответа'
+        verbose_name_plural = 'варианты ответов'
 
 
 class UsersAnswers(models.Model):
@@ -65,3 +81,7 @@ class UsersAnswers(models.Model):
 
     def __str__(self):
         return f'{self.user_id} {self.poll_id}'
+
+    class Meta:
+        verbose_name = 'ответы пользователя'
+        verbose_name_plural = 'ответы пользователей'
